@@ -1,22 +1,30 @@
-<!-- eslint-disable vue/multi-word-component-names -->
 <template>
-    <div class="flex flex-col items-center justify-center h-screen bg-gray-100">
-      <h1 class="text-4xl font-bold mb-4">Bienvenue dans Time Manager!</h1>
-      <p class="text-lg mb-6">Gérez vos heures de travail efficacement.</p>
-      <router-link to="/clock" class="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600">
-        Accéder au Clock Manager
-      </router-link>
-      <router-link to="/user" class="mt-4 bg-green-500 text-white font-bold py-2 px-4 rounded hover:bg-green-600">
-        Gérer les utilisateurs
-      </router-link>
+  <div id="app" class="min-h-screen bg-gray-100">
+    <nav class="bg-blue-600 p-4 text-white">
+      <h1 class="text-2xl font-bold">Time Manager</h1>
+    </nav>
+    
+    <div class="container mx-auto p-4">
+      <User />
+      
+      <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <router-view></router-view>
+      </div>
     </div>
-  </template>
-  
-  <script setup>
-  // Tu peux ajouter des logiques spécifiques ou des données ici si nécessaire
-  </script>
-  
-  <style scoped>
-  /* Styles supplémentaires pour améliorer la présentation */
-  </style>
-  
+  </div>
+</template>
+
+<script>
+import User from './components/User.vue'
+
+export default {
+  name: 'App',
+  components: {
+    User
+  }
+}
+</script>
+
+<style>
+/* Vous pouvez ajouter des styles globaux ici si nécessaire */
+</style>
