@@ -1,67 +1,57 @@
 <template>
-    <div class="flex flex-col items-center justify-center h-screen">
-      <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
-        <h1 class="text-2xl font-bold mb-4">Management des Working Times</h1>
-  
-        <div class="flex items-center mb-4">
-            <button 
-                @click="createWorkingTime({ working_time: { start: startTime, end: endTime } })"
-                class="font-bold py-2 px-4 rounded"
-            >Create</button>
-            <input 
-              v-model="startTime" 
-              type="datetime-local" 
-              class="mr-2 p-2 border rounded"
-            />
-            <input 
-              v-model="endTime" 
-              type="datetime-local" 
-              class="mr-2 p-2 border rounded"
-            />
-        </div>
+  <div class="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-2xl">
+      <h1 class="text-2xl font-bold mb-6 text-center">Management des Working Times</h1>
 
-        <!-- Display existing working times IDs in a grid -->
-        <div v-if="workingTimes.length">
-          <h2 class="text-xl font-bold mb-2">Working Times:</h2>
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            <div
-              v-for="(time, index) in workingTimes"
-              :key="index"
-              @click="selectWorkingTime(time.id)"
-              :class="{'selected-cell': selectedWorkingTime && selectedWorkingTime.id === time.id, 'border p-2 cursor-pointer': true}"
-            >
-              {{ time.id }}
-            </div>
-          </div>
-        </div>
-        <div v-else>
-          <p>No working times available.</p>
-        </div>
+      <!-- Button to fetch working times -->
+      <button @click="getWorkingTimesByUserId" class="bg-blue-500 text-white font-bold py-2 px-4 rounded mb-6 w-full hover:bg-blue-600">
+        Load Working Times
+      </button>
 
-        <!-- Display selected working time details in update format -->
-        <div>
-          <h2 class="text-xl font-bold mt-4">Selected Working Time:</h2>
-          <div class="flex items-center mb-4">
-            <input v-model="startTime" type="datetime-local" class="mr-2 p-2 border rounded" />
-            <input v-model="endTime" type="datetime-local" class="mr-2 p-2 border rounded" />
-          </div>
-          <div class="flex items-center mb-4">
-            <button 
-              @click="updateWorkingTime({ working_time: { start: startTime, end: endTime } })" 
-              :disabled="!timesChanged" 
-              :class="{ 'deactivated-button': !timesChanged }"
-              class="font-bold py-2 px-4 rounded"
-              >Update
-            </button>
-            <button @click="deleteWorkingTime()" class="font-bold py-2 px-4 rounded">Delete</button>
+      <!-- Display existing working times IDs in a grid -->
+      <div v-if="workingTimes.length">
+        <h2 class="text-xl font-bold mb-4">Working Times:</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div
+            v-for="(time, index) in workingTimes"
+            :key="index"
+            @click="selectWorkingTime(time.id)"
+            :class="['border p-2 cursor-pointer text-center', { 'selected-cell': selectedWorkingTime && selectedWorkingTime.id === time.id }]"
+          >
+            {{ time.id }}
           </div>
         </div>
       </div>
-    </div>
-    <div>
+      <div v-else>
+        <p class="text-gray-500">No working times available.</p>
+      </div>
 
+      <!-- Display selected working time details in update format -->
+      <div v-if="selectedWorkingTime" class="mt-6">
+        <h2 class="text-xl font-bold mb-4">Selected Working Time:</h2>
+        <div class="flex flex-col sm:flex-row items-center mb-4">
+          <input v-model="startTime" type="datetime-local" class="mr-2 p-2 border rounded mb-2 sm:mb-0" />
+          <input v-model="endTime" type="datetime-local" class="mr-2 p-2 border rounded mb-2 sm:mb-0" />
+          <button @click="updateWorkingTime({ working_time: { start: startTime, end: endTime } })" :disabled="!timesChanged" :class="{ 'deactivated-button': !timesChanged }" class="bg-green-500 text-white font-bold py-2 px-4 rounded hover:bg-green-600 disabled:opacity-50">
+            Update Working Time
+          </button>
+        </div>
+      </div>
+
+      <!-- Existing form and buttons -->
+      <div class="flex flex-col sm:flex-row items-center mb-4">
+        <input v-model="startTime" type="datetime-local" class="mr-2 p-2 border rounded mb-2 sm:mb-0" />
+        <input v-model="endTime" type="datetime-local" class="mr-2 p-2 border rounded mb-2 sm:mb-0" />
+        <button @click="createWorkingTime({ working_time: { start: startTime, end: endTime } })" class="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600">
+          Create Working Time
+        </button>
+      </div>
+      <button @click="deleteWorkingTime()" class="bg-red-500 text-white font-bold py-2 px-4 rounded w-full hover:bg-red-600">
+        Delete Working Time
+      </button>
     </div>
-  </template>
+  </div>
+</template>
   
   <script>
   import axios from 'axios';
@@ -80,10 +70,13 @@
   },
   data() {
     return {
+      user_id: '1',
       workingTimes: [],
       selectedWorkingTime: null,
       startTime: '',
-      endTime: ''
+      endTime: '',
+      startTimeCreate: '',
+      endTimeCreate: ''
     };
   },
   computed: {
@@ -95,7 +88,7 @@
     methods: {
       async getWorkingTimesByUserId() {
         try {
-          const response = await fetch(`http://localhost:4000/api/workingtimes/1?start=2022-10-08T09:00:00Z&end=2024-10-08T17:00:00Z`);
+          const response = await fetch(`http://localhost:4000/api/workingtimes/${this.user_id}?start=2022-10-08T09:00:00Z&end=2024-10-08T17:00:00Z`);
           const data = await response.json();
           this.workingTimes = data.data;
           console.log('Working times for user {{this.userId}}:', this.workingTimes);
@@ -105,7 +98,7 @@
       },
       async createWorkingTime(data) {
         try {
-          const response = await axios.post(`http://localhost:4000/api/workingtime/1`, data);
+          const response = await axios.post(`http://localhost:4000/api/workingtime/${this.user_id}`, data);
           this.getWorkingTimesByUserId();
           console.log('Working time created:', response.data);
         } catch (error) {
