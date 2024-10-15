@@ -5,3 +5,11 @@ metadata:
   namespace: time-manager
 data:
   database_url: "postgresql://postgres:postgres@postgres:5432/postgres"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: time-manager
+data:
+  API_URL: "http://elixir-backend:4000"

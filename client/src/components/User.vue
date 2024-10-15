@@ -145,6 +145,7 @@
 
 <script>
 import axios from "axios";
+import apiClient from '@/api/api';
 
 export default {
   data() {
@@ -166,7 +167,7 @@ export default {
         // Clear the list of users
         this.users = [];
 
-        const response = await axios.post(`http://localhost:4000/api/users`, {
+        const response = await apiClient.post(`/api/users`, {
           user: {
             username: this.userName,
             email: this.userEmail,
@@ -191,8 +192,8 @@ export default {
 
         if (this.userName && this.userEmail) {
           // Fetch user data by username and email
-          const response = await axios.get(
-            `http://localhost:4000/api/users/user`,
+          const response = await apiClient.get(
+            `/api/users/user`,
             {
               params: {
                 username: this.userName,
@@ -219,8 +220,8 @@ export default {
           });
 
           // Fetch user data by userId
-          const response = await axios.get(
-            `http://localhost:4000/api/users/${this.userId}`
+          const response = await apiClient.get(
+            `/api/users/${this.userId}`
           );
           this.userData = response.data;
         } else {
@@ -236,7 +237,7 @@ export default {
         // Clear the individual user
         this.userData = null;
 
-        const response = await axios.get(`http://localhost:4000/api/users`);
+        const response = await apiClient.get(`/api/users`);
         this.users = response.data;
         console.log(this.users);
         alert("Get all users successful");
@@ -247,8 +248,8 @@ export default {
     },
     async updateUser() {
       try {
-        const response = await axios.put(
-          `http://localhost:4000/api/users/${this.userId}`,
+        const response = await apiClient.put(
+          `/api/users/${this.userId}`,
           {
             user: {
               username: this.userName,
@@ -267,7 +268,7 @@ export default {
     },
     async deleteUser() {
       try {
-        await axios.delete(`http://localhost:4000/api/users/${this.userId}`);
+        await apiClient.delete(`/api/users/${this.userId}`);
         this.userData = null; // Clear the data after deletion
         alert("User deleted successfully");
         this.resetUrl();
@@ -277,7 +278,7 @@ export default {
     },
     async deleteUserById(id) {
       try {
-        await axios.delete(`http://localhost:4000/api/users/${id}`);
+        await apiClient.delete(`/api/users/${id}`);
         this.getAllUsers(); // Refresh the user list after deletion
         alert("User deleted successfully");
       } catch (error) {

@@ -14,8 +14,8 @@ RUN mix local.hex --force && \
 # Set the working directory to /app
 WORKDIR /app
 
-# Copy the time_manager directory contents into the container
-COPY ./time_manager .
+# Copy the entire project into the container
+COPY . .
 
 # Install dependencies
 RUN mix deps.get --only prod
@@ -31,9 +31,9 @@ RUN mix compile
 RUN mix release
 
 # Final stage
-FROM alpine:3.14
+FROM alpine:3.16
 
-RUN apk add --no-cache openssl ncurses-libs
+RUN apk add --no-cache openssl ncurses-libs libstdc++
 
 WORKDIR /app
 

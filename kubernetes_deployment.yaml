@@ -89,6 +89,11 @@ spec:
                 key: postgres_default_password
           - name: DATABASE_URL
             value: "ecto://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/postgres"
+          - name: API_URL
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: API_URL
         resources:
           requests:
             memory: "64Mi"
@@ -134,6 +139,12 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
+        env:
+          - name: VUE_APP_API_URL
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: API_URL
         resources:
           requests:
             memory: "64Mi"
