@@ -144,8 +144,18 @@
 </template>
 
 <script>
-import axios from "axios";
-import apiClient from '@/api/api';
+// import apiClient from '@/services/api';
+
+  import axios from 'axios';
+
+  console.log('VUE_APP_API_URL:', process.env.VUE_APP_API_URL);
+
+  const apiClient = axios.create({
+    baseURL: process.env.VUE_APP_API_URL || "/api",
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
 
 export default {
   data() {
@@ -167,7 +177,7 @@ export default {
         // Clear the list of users
         this.users = [];
 
-        const response = await apiClient.post(`/api/users`, {
+        const response = await axios.post(`/api/users`, {
           user: {
             username: this.userName,
             email: this.userEmail,
@@ -237,7 +247,7 @@ export default {
         // Clear the individual user
         this.userData = null;
 
-        const response = await apiClient.get(`/api/users`);
+        const response = await axios.get(`http://elixir-backend:4000/api/users`);
         this.users = response.data;
         console.log(this.users);
         alert("Get all users successful");
@@ -325,5 +335,10 @@ export default {
   //   const userIdFromUrl = this.$route.query.id;
   //   console.log('userIdFromUrl',userIdFromUrl)
   // },
+  created() {
+    console.log('API URL from env:', process.env.VUE_APP_API_URL);
+    console.log('apiClient baseURL:', apiClient.defaults.baseURL);
+    console.log('Full apiClient config:', apiClient.defaults);
+  }
 };
 </script>
