@@ -2,6 +2,8 @@ defmodule TimeManager.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {Jason.Encoder, only: [:id, :username, :email, :role, :team_id, :inserted_at, :updated_at]}
+
   schema "users" do
     field :username, :string
     field :email, :string

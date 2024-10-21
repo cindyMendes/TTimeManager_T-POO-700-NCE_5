@@ -3,12 +3,27 @@ defmodule TimeManagerWeb.TeamController do
 
   alias TimeManager.Teams
   alias TimeManager.Teams.Team
+  alias TimeManager.Accounts
 
   # GET /teams - Lister toutes les équipes
+  # def index(conn, _params) do
+  #   teams = Teams.list_teams()
+  #   render(conn, "index.json", teams: teams)
+  # end
   def index(conn, _params) do
     teams = Teams.list_teams()
-    render(conn, "index.json", teams: teams)
+
+    case teams do
+      [] ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{errors: %{detail: "Aucune équipe trouvée"}})
+
+      _ ->
+        render(conn, "index.json", teams: teams)
+    end
   end
+
 
   # GET /teams/:id - Récupérer une équipe spécifique
   # def show(conn, %{"id" => id}) do

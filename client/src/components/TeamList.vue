@@ -1,9 +1,7 @@
 <template>
     <div>
-      <!-- <h1 class="text-2xl font-bold mb-4">Team Management</h1> -->
-  
-      <!-- Liste des équipes -->
-      <ul v-if="teams.length">
+      <!-- Vérifie si l'objet teams est défini avant d'essayer d'accéder à ses propriétés -->
+      <ul v-if="teams && teams.length">
         <li v-for="team in teams" :key="team.id" class="mb-4 p-4 bg-gray-200 rounded shadow">
           <h3 class="text-xl font-bold mb-2">{{ team.name }}</h3>
           <p class="text-sm text-gray-600">Managed by ID: {{ team.manager_id }}</p>
@@ -56,6 +54,7 @@
     </div>
   </template>
   
+  
   <script>
   import axios from 'axios';
   
@@ -74,11 +73,29 @@
       this.fetchTeams(); // Récupérer la liste des équipes à la création du composant
     },
     methods: {
+      // Récupérer le token JWT du localStorage
+      getAuthToken() {
+        return localStorage.getItem('token'); // Assurez-vous que le token est stocké sous la clé 'token'
+      },
+  
+      // Configurer les en-têtes avec le token d'authentification
+      setAuthHeader() {
+        const token = this.getAuthToken();
+        if (token) {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          console.log(token)
+        } else {
+          console.error('Token JWT non trouvé');
+        }
+      },
+  
       // Récupérer la liste des équipes depuis l'API
       fetchTeams() {
-        axios.get('/api/teams')
+        this.setAuthHeader();
+        axios.get('http://localhost:4000/api/teams')
           .then(response => {
             this.teams = response.data.data;
+            console.log('Response from API:', response.data.data); 
           })
           .catch(error => {
             console.error('Error fetching teams:', error);
@@ -87,7 +104,8 @@
   
       // Créer une nouvelle équipe
       createTeam() {
-        axios.post('/api/teams', { team: this.newTeam })
+        this.setAuthHeader(); // Ajouter le token JWT à chaque requête
+        axios.post('http://localhost:4000/api/teams', { team: this.newTeam })
           .then(() => {
             this.fetchTeams(); // Recharger la liste des équipes après création
             this.newTeam.name = '';
@@ -107,6 +125,7 @@
           return;
         }
   
+        this.setAuthHeader(); // Ajouter le token JWT à chaque requête
         axios.put(`/api/teams/${teamId}/users/${userId}`)
           .then(() => {
             this.fetchTeams(); // Recharger la liste des équipes après avoir ajouté un utilisateur
@@ -119,6 +138,7 @@
   
       // Supprimer une équipe
       deleteTeam(teamId) {
+        this.setAuthHeader(); // Ajouter le token JWT à chaque requête
         axios.delete(`/api/teams/${teamId}`)
           .then(() => {
             this.fetchTeams(); // Recharger la liste des équipes après suppression
@@ -126,10 +146,15 @@
           .catch(error => {
             console.error('Error deleting team:', error);
           });
-      }
-    }
+      },
+
+      mounted() {
+    this.fetchTeams();
+  },
+    },
   };
   </script>
+  
   
   <style scoped>
   ul {
