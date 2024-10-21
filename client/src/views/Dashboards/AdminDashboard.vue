@@ -2,7 +2,7 @@
 <template>
     <div class="bg-bat-black min-h-screen p-4 md:p-8 font-gotham text-bat-silver">
       <header class="flex items-center justify-between mb-8">
-        <img src="../assets/logo-de-batman.jpg" alt="Batman Logo" class="h-12 w-auto" />
+        <img src="@/assets/pngegg.png" alt="Batman Logo" class="h-12 w-auto" />
         <h1 class="text-3xl md:text-4xl font-bold text-bat-yellow">Gotham City Management</h1>
       </header>
       
