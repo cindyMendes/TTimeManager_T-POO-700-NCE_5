@@ -49,8 +49,9 @@ end
 
     # Routes for all authenticated users
     get("/users/profile", UserController, :show_current_user)
+    get("/users/:id", UserController, :show_user)
     put("/users/profile", UserController, :update_current_user)
-    put("/users/:id", UserController, :update)
+    put("/users/:id", UserController, :update_user)
     delete("/users/profile", UserController, :delete_current_user)
 
     resources("/workingtimes", WorkingTimeController,
@@ -82,7 +83,7 @@ end
 
     # Routes for general manager only
     get("/users", UserController, :index)
-    delete("/users/:id", UserController, :delete)
+    delete("/users/:id", UserController, :delete_user)
 
     # Report routes
     get("/reports/daily_hours", ReportController, :daily_hours)
