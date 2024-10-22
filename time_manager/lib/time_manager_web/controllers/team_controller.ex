@@ -12,6 +12,7 @@ defmodule TimeManagerWeb.TeamController do
   # end
   def index(conn, _params) do
     teams = Teams.list_teams()
+    IO.inspect(teams, label: "Teams List")
 
     case teams do
       [] ->
@@ -20,9 +21,12 @@ defmodule TimeManagerWeb.TeamController do
         |> json(%{errors: %{detail: "Aucune équipe trouvée"}})
 
       _ ->
+        IO.inspect(teams, label: "Rendu des équipes avant JSON")
         render(conn, "index.json", teams: teams)
     end
   end
+
+
 
 
   # GET /teams/:id - Récupérer une équipe spécifique
