@@ -1,4 +1,3 @@
-<!-- eslint-disable vue/multi-word-component-names -->
 <template>
   <div class="bg-bat-gray rounded-lg shadow-bat p-6">
     <h2 class="text-2xl font-bold mb-6 text-bat-yellow">
@@ -8,11 +7,7 @@
     <!-- Champs de saisie -->
     <div class="space-y-4 mb-6">
       <div>
-        <label
-          for="userName"
-          class="block text-sm font-medium text-bat-silver mb-1"
-          >Alias :</label
-        >
+        <label for="userName" class="block text-sm font-medium text-bat-silver mb-1">Alias :</label>
         <input
           type="text"
           v-model="userName"
@@ -23,11 +18,7 @@
       </div>
 
       <div>
-        <label
-          for="userEmail"
-          class="block text-sm font-medium text-bat-silver mb-1"
-          >Canal de Communication :</label
-        >
+        <label for="userEmail" class="block text-sm font-medium text-bat-silver mb-1">Canal de Communication :</label>
         <input
           type="email"
           v-model="userEmail"
@@ -38,11 +29,7 @@
       </div>
 
       <div>
-        <label
-          for="userId"
-          class="block text-sm font-medium text-bat-silver mb-1"
-          >Code d'Identification :</label
-        >
+        <label for="userId" class="block text-sm font-medium text-bat-silver mb-1">Code d'Identification :</label>
         <input
           type="text"
           v-model="userId"
@@ -73,97 +60,97 @@
     </div>
 
     <!-- Affichage des informations de l'utilisateur -->
-    <div
-      v-if="userData"
-      class="mt-6 p-4 bg-bat-black rounded-lg border border-bat-yellow"
-    >
-      <h3 class="text-lg font-semibold mb-2 text-bat-yellow">
-        Profil du Citoyen
-      </h3>
+    <div v-if="userData" class="mt-6 p-4 bg-bat-black rounded-lg border border-bat-yellow">
+      <h3 class="text-lg font-semibold mb-2 text-bat-yellow">Profil du Citoyen</h3>
       <p class="text-bat-silver">
         <strong class="text-bat-blue">ID :</strong> {{ userData.data.id }}
       </p>
       <p class="text-bat-silver">
-        <strong class="text-bat-blue">Alias :</strong>
-        {{ userData.data.username }}
+        <strong class="text-bat-blue">Alias :</strong> {{ userData.data.username }}
       </p>
       <p class="text-bat-silver">
-        <strong class="text-bat-blue">Canal :</strong>
-        {{ userData.data.email }}
+        <strong class="text-bat-blue">Canal :</strong> {{ userData.data.email }}
       </p>
     </div>
 
     <!-- Affichage de tous les utilisateurs -->
     <div v-if="users.data && users.data.length" class="mt-6">
-      <h3 class="text-lg font-semibold mb-2 text-bat-yellow">
-        Registre des Citoyens de Gotham
-      </h3>
+      <h3 class="text-lg font-semibold mb-2 text-bat-yellow">Registre des Citoyens de Gotham</h3>
       <ul class="bg-bat-black rounded-lg divide-y divide-bat-gray">
-        <li
-          v-for="user in users.data"
-          :key="user.id"
-          class="px-4 py-3 text-bat-silver"
-        >
-          <!-- User List Item -->
-          <div
-            class="flex items-center justify-between bg-bat-black text-bat-silver py-2 px-4 rounded-md"
-          >
-            <!-- User Information (ensure this doesn't expand) -->
+        <li v-for="user in users.data" :key="user.id" class="px-4 py-3 text-bat-silver">
+          <div class="flex items-center justify-between bg-bat-black text-bat-silver py-2 px-4 rounded-md">
             <div class="flex-grow">
               {{ user.id }} - {{ user.username }} - {{ user.email }}
             </div>
-
-            <!-- Buttons Container (fixed width) -->
             <div class="flex-shrink-0 flex items-center">
-              <!-- Update Button -->
               <button @click="selectUserForUpdate(user)">
-                <img
-                  src="@/assets/icons/edit-icon.png"
-                  alt="Edit"
-                  class="w-4 h-4 ml-4 mr-2"
-                />
+                <img src="@/assets/icons/edit-icon.png" alt="Edit" class="w-4 h-4 ml-4 mr-2" />
               </button>
-
-              <!-- Delete Button -->
               <button @click="deleteUserById(user.id)">
-                <img
-                  src="@/assets/icons/delete-icon.png"
-                  alt="Delete"
-                  class="w-4 h-4 ml-2"
-                />
+                <img src="@/assets/icons/delete-icon.png" alt="Delete" class="w-4 h-4 ml-2" />
               </button>
             </div>
           </div>
         </li>
       </ul>
     </div>
+
+    <!-- Error Display -->
+    <div v-if="error" class="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+      {{ error }}
+    </div>
   </div>
 </template>
 
 <script>
-import axios from "axios";
+import api from '@/services/api_token';
 
 export default {
+  name: 'User',
   data() {
     return {
       userName: "",
       userEmail: "",
-      userId: "", // This will be used to get or delete a specific user
-      userData: null, // To store a single user's data
-      users: [], // To store all users when calling getAllUsers
+      userId: "",
+      userData: null,
+      users: [],
+      error: null
     };
   },
-  //   mounted() {
-  //     // Automatically fetch all users when the component is mounted
-  //     this.getAllUsers();
-  //   },
+
+  created() {
+    // Check if user is authenticated and has proper role
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    
+    if (!token) {
+      this.$router.push('/login');
+      return;
+    }
+
+    // if (role !== 'general_manager') {
+    //   this.error = "Accès non autorisé. Seuls les general managers peuvent accéder à cette page.";
+    //   setTimeout(() => {
+    //     this.$router.push('/login');
+    //   }, 2000);
+    //   return;
+    // }
+
+    // If there's an ID in the URL, load that user
+    const userIdFromUrl = this.$route.query.id;
+    if (userIdFromUrl) {
+      this.userId = userIdFromUrl;
+      this.getUser();
+    }
+  },
+
   methods: {
     async createUser() {
       try {
-        // Clear the list of users
+        this.error = null;
         this.users = [];
-
-        const response = await axios.post(`http://localhost:4000/api/users`, {
+        
+        const response = await api.post('/users', {
           user: {
             username: this.userName,
             email: this.userEmail,
@@ -171,155 +158,188 @@ export default {
         });
 
         this.userData = response.data;
-        alert("User created successfully");
+        alert("Citoyen enregistré avec succès");
+        this.clearForm();
       } catch (error) {
-        if (error.response && error.response.status === 500) {
-          // Handle conflict error (user already exists)
-          alert("User already exists in the database.");
-        } else {
-          this.handleError(error, "creating user");
-        }
+        this.handleError(error, "l'enregistrement du citoyen");
       }
     },
+
     async getUser() {
       try {
-        // Clear the list of users
+        this.error = null;
         this.users = [];
 
+        let response;
         if (this.userName && this.userEmail) {
-          // Fetch user data by username and email
-          const response = await axios.get(
-            `http://localhost:4000/api/users/user`,
-            {
-              params: {
-                username: this.userName,
-                email: this.userEmail,
-              },
-            }
-          );
-          this.userData = response.data;
-
-          // Add query params to the URL for userId
-          this.$router.push({
-            path: "/",
-            query: {
-              id: this.userData.data.id,
-            },
-          });
-        } else if (this.userId) {
-          // Add query params to the URL for userId
-          this.$router.push({
-            path: "/",
-            query: {
-              id: this.userId,
-            },
-          });
-
-          // Fetch user data by userId
-          const response = await axios.get(
-            `http://localhost:4000/api/users/${this.userId}`
-          );
-          this.userData = response.data;
-        } else {
-          // Handle missing input
-          alert("Please provide either username & email or user ID.");
-        }
-      } catch (error) {
-        this.handleError(error, "getting user");
-      }
-    },
-    async getAllUsers() {
-      try {
-        // Clear the individual user
-        this.userData = null;
-
-        const response = await axios.get(`http://localhost:4000/api/users`);
-        this.users = response.data;
-        console.log(this.users);
-        alert("Get all users successful");
-        this.resetUrl();
-      } catch (error) {
-        this.handleError(error, "getting all users");
-      }
-    },
-    async updateUser() {
-      try {
-        const response = await axios.put(
-          `http://localhost:4000/api/users/${this.userId}`,
-          {
-            user: {
+          response = await api.get('/users/user', {
+            params: {
               username: this.userName,
               email: this.userEmail,
             },
-          }
-        );
-        this.userData = response.data;
-        alert("User updated successfully");
+          });
+        } else if (this.userId) {
+          response = await api.get(`/users/${this.userId}`);
+        } else {
+          throw new Error("Veuillez fournir soit un nom d'utilisateur et un email, soit un ID.");
+        }
 
-        // Clear the list of users
-        this.users = [];
+        this.userData = response.data;
+        this.updateUrlWithUserId(this.userData.data.id);
       } catch (error) {
-        this.handleError(error, "updating user");
+        this.handleError(error, "la recherche du citoyen");
       }
     },
-    async deleteUser() {
+
+    async getAllUsers() {
       try {
-        await axios.delete(`http://localhost:4000/api/users/${this.userId}`);
-        this.userData = null; // Clear the data after deletion
-        alert("User deleted successfully");
+        this.error = null;
+        this.userData = null;
+        
+        const response = await api.get('/users');
+        this.users = response.data;
         this.resetUrl();
       } catch (error) {
-        this.handleError(error, "deleting user");
+        this.handleError(error, "la récupération de tous les citoyens");
       }
     },
+
+    async updateUser() {
+      try {
+        this.error = null;
+        if (!this.userId) {
+          throw new Error("ID du citoyen requis pour la mise à jour");
+        }
+
+        const response = await api.put(`/users/${this.userId}`, {
+          user: {
+            username: this.userName,
+            email: this.userEmail,
+          },
+        });
+
+        this.userData = response.data;
+        alert("Informations du citoyen mises à jour avec succès");
+        this.users = [];
+      } catch (error) {
+        this.handleError(error, "la mise à jour du citoyen");
+      }
+    },
+
+    async deleteUser() {
+      try {
+        this.error = null;
+        if (!this.userId) {
+          throw new Error("ID du citoyen requis pour la suppression");
+        }
+
+        await api.delete(`/users/${this.userId}`);
+        this.userData = null;
+        alert("Dossier du citoyen supprimé avec succès");
+        this.clearForm();
+        this.resetUrl();
+      } catch (error) {
+        this.handleError(error, "la suppression du citoyen");
+      }
+    },
+
     async deleteUserById(id) {
       try {
-        await axios.delete(`http://localhost:4000/api/users/${id}`);
-        this.getAllUsers(); // Refresh the user list after deletion
-        alert("User deleted successfully");
+        this.error = null;
+        await api.delete(`/users/${id}`);
+        await this.getAllUsers();
+        alert("Dossier du citoyen supprimé avec succès");
       } catch (error) {
-        this.handleError(error, "deleting user");
+        this.handleError(error, "la suppression du citoyen");
       }
     },
-    resetUrl() {
-      // Create a new route object, excluding the 'id' query parameter
-      this.$router.replace({
-        path: this.$route.path, // Keep the current path
-        query: {}, // Set the query object to an empty object to remove all query parameters
-      });
-    },
+
     selectUserForUpdate(user) {
-      // Prefill the form with selected user's data for update
       this.userId = user.id;
       this.userName = user.username;
       this.userEmail = user.email;
-      // Add query params to the URL for userId
+      this.updateUrlWithUserId(user.id);
+    },
+
+    clearForm() {
+      this.userName = "";
+      this.userEmail = "";
+      this.userId = "";
+    },
+
+    updateUrlWithUserId(id) {
       this.$router.push({
-        path: "/",
-        query: {
-          id: this.userId,
-        },
+        path: this.$route.path,
+        query: { id: id },
       });
     },
+
+    resetUrl() {
+      this.$router.replace({
+        path: this.$route.path,
+        query: {},
+      });
+    },
+
     handleError(error, action) {
       if (error.response) {
         const status = error.response.status;
-        const message =
-          error.response.data.message || error.response.statusText;
-        alert(`Error ${status}: ${message} while ${action}`);
+        if (status === 401) {
+          this.error = "Session expirée. Veuillez vous reconnecter.";
+          setTimeout(() => {
+            this.$router.push('/login');
+          }, 2000);
+        } else if (status === 403) {
+          this.error = "Accès non autorisé. Droits insuffisants.";
+        } else {
+          const message = error.response.data.errors?.detail || 
+                         error.response.data.message || 
+                         error.response.statusText;
+          this.error = `Erreur lors de ${action}: ${message}`;
+        }
       } else if (error.request) {
-        alert(
-          `No response received from server while ${action}. Please check your network or try again later.`
-        );
+        this.error = `Pas de réponse du serveur lors de ${action}. Veuillez vérifier votre connexion.`;
       } else {
-        alert(`Error while ${action}: ${error.message}`);
+        this.error = `Erreur lors de ${action}: ${error.message}`;
       }
-    },
+
+      // Clear error after 5 seconds
+      setTimeout(() => {
+        this.error = null;
+      }, 5000);
+    }
   },
 
-  //   mounted() {
-  //   const userIdFromUrl = this.$route.query.id;
-  //   console.log('userIdFromUrl',userIdFromUrl)
-  // },
+  beforeRouteUpdate(to, from, next) {
+    if (to.query.id !== from.query.id) {
+      this.userId = to.query.id;
+      if (this.userId) {
+        this.getUser();
+      }
+    }
+    next();
+  }
 };
 </script>
+
+<style scoped>
+.bat-button {
+  @apply py-2 px-4 rounded-md text-sm font-medium transition duration-150 ease-in-out;
+}
+
+.bat-button-blue {
+  @apply bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+.bat-button-gray {
+  @apply bg-gray-600 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+}
+
+.bat-button-yellow {
+  @apply bg-yellow-500 text-black hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2;
+}
+
+.bat-button-red {
+  @apply bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+}
+</style>
