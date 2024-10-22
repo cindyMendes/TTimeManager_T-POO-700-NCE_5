@@ -50,6 +50,7 @@ end
     # Routes for all authenticated users
     get("/users/profile", UserController, :show_current_user)
     put("/users/profile", UserController, :update_current_user)
+    put("/users/:id", UserController, :update_current_user)
     delete("/users/profile", UserController, :delete_current_user)
 
     resources("/workingtimes", WorkingTimeController,
