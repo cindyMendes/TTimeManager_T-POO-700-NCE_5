@@ -3,9 +3,27 @@ defmodule TimeManagerWeb.UserController do
   alias TimeManager.Accounts
   alias TimeManager.Accounts.User
 
+  # def index(conn, _params) do
+  #   users = Accounts.list_users()
+  #   render(conn, :index, users: users)
+  # end
   def index(conn, _params) do
     users = Accounts.list_users()
-    render(conn, :index, users: users)
+    conn
+    |> put_status(:ok)
+    |> json(%{
+      data: Enum.map(users, fn user -> 
+        %{
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          team_id: user.team_id,
+          inserted_at: user.inserted_at,
+          updated_at: user.updated_at
+        }
+      end)
+    })
   end
 
   def show(conn, %{"id" => id}) do
@@ -62,26 +80,33 @@ defmodule TimeManagerWeb.UserController do
     |> Map.drop(["password_confirmation"]) # if you handle password confirmation
   end
 
+  # Promote an employee to manager
   def promote(conn, %{"id" => id}) do
     user_to_promote = Accounts.get_user!(id)
     current_user = Guardian.Plug.current_resource(conn)
 
-    IO.inspect(current_user, label: "Current User")
-    IO.inspect(current_user.role, label: "Current User Role")
-
     if current_user && current_user.role == "general_manager" do
       case Accounts.update_user_role(user_to_promote, "manager") do
         {:ok, updated_user} ->
-          render(conn, :show, user: updated_user)
+          conn
+          |> put_status(:ok)
+          |> json(%{
+            data: %{
+              id: updated_user.id,
+              username: updated_user.username,
+              email: updated_user.email,
+              role: updated_user.role
+            }
+          })
         {:error, changeset} ->
           conn
           |> put_status(:unprocessable_entity)
-          |> render(TimeManagerWeb.ChangesetView, "error.json", changeset: changeset)
+          |> json(%{errors: %{detail: format_changeset_errors(changeset)}})
       end
     else
       conn
       |> put_status(:forbidden)
-      |> json(%{error: "Not authorized"})
+      |> json(%{errors: %{detail: "Not authorized"}})
     end
   end
 
@@ -90,22 +115,28 @@ defmodule TimeManagerWeb.UserController do
     user_to_demote = Accounts.get_user!(id)
     current_user = Guardian.Plug.current_resource(conn)
 
-    IO.inspect(current_user, label: "Current User")
-    IO.inspect(current_user.role, label: "Current User Role")
-
     if current_user && current_user.role == "general_manager" do
       case Accounts.update_user_role(user_to_demote, "employee") do
         {:ok, updated_user} ->
-          render(conn, :show, user: updated_user)
+          conn
+          |> put_status(:ok)
+          |> json(%{
+            data: %{
+              id: updated_user.id,
+              username: updated_user.username,
+              email: updated_user.email,
+              role: updated_user.role
+            }
+          })
         {:error, changeset} ->
           conn
           |> put_status(:unprocessable_entity)
-          |> render(TimeManagerWeb.ChangesetView, "error.json", changeset: changeset)
+          |> json(%{errors: %{detail: format_changeset_errors(changeset)}})
       end
     else
       conn
       |> put_status(:forbidden)
-      |> json(%{error: "Not authorized"})
+      |> json(%{errors: %{detail: "Not authorized"}})
     end
   end
 
@@ -118,6 +149,14 @@ defmodule TimeManagerWeb.UserController do
 
   defp get_current_user(conn) do
     conn.assigns[:current_user]
+  end
+
+  defp format_changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
+        String.replace(acc, "%{#{key}}", to_string(value))
+      end)
+    end)
   end
 
 end

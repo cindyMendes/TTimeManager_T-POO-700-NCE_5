@@ -81,8 +81,6 @@ end
 
     # Routes for general manager only
     get("/users", UserController, :index)
-    post("/users/:id/promote", UserController, :promote_to_manager)
-    post("/users/:id/demote", UserController, :demote_to_employee)
     delete("/users/:id", UserController, :delete)
 
     # Report routes

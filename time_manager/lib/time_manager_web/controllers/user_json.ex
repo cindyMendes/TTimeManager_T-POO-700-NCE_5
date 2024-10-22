@@ -19,8 +19,11 @@ defmodule TimeManagerWeb.UserJSON do
     %{
       id: user.id,
       email: user.email,
-      username: user.username
-      # Add other fields as necessary
+      username: user.username,
+      role: user.role,
+      team_id: user.team_id,
+      inserted_at: user.inserted_at,
+      updated_at: user.updated_at
     }
   end
 
@@ -33,9 +36,17 @@ defmodule TimeManagerWeb.UserJSON do
       username: user.username,
       email: user.email,
       role: user.role,
+      team_id: user.team_id,
       inserted_at: user.inserted_at,
       updated_at: user.updated_at
     }
+  end
+
+  @doc """
+  Renders the error message
+  """
+  def error(%{detail: message}) do
+    %{errors: %{detail: message}}
   end
 
 end
