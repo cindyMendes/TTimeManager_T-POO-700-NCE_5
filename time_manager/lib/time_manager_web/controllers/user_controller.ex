@@ -3,9 +3,27 @@ defmodule TimeManagerWeb.UserController do
   alias TimeManager.Accounts
   alias TimeManager.Accounts.User
 
+  # def index(conn, _params) do
+  #   users = Accounts.list_users()
+  #   render(conn, :index, users: users)
+  # end
   def index(conn, _params) do
     users = Accounts.list_users()
-    render(conn, :index, users: users)
+    conn
+    |> put_status(:ok)
+    |> json(%{
+      data: Enum.map(users, fn user -> 
+        %{
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          team_id: user.team_id,
+          inserted_at: user.inserted_at,
+          updated_at: user.updated_at
+        }
+      end)
+    })
   end
 
   def show(conn, %{"id" => id}) do
