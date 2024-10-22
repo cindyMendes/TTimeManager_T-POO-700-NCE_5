@@ -12,7 +12,7 @@ defmodule TimeManagerWeb.UserController do
     conn
     |> put_status(:ok)
     |> json(%{
-      data: Enum.map(users, fn user -> 
+      data: Enum.map(users, fn user ->
         %{
           id: user.id,
           username: user.username,
@@ -38,7 +38,7 @@ defmodule TimeManagerWeb.UserController do
 
   def create(conn, %{"user" => user_params}) do
     user_params = filter_user_params(user_params)
-    
+
     with {:ok, %User{} = user} <- Accounts.create_user(user_params) do
       conn
       |> put_status(:created)

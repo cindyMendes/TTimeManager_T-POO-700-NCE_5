@@ -3,14 +3,20 @@
       <ul v-if="teams && teams.length">
         <li v-for="team in teams" :key="team.id" class="mb-4 p-4 bg-gray-200 rounded shadow">
           <h3 class="text-xl font-bold mb-2">{{ team.name }}</h3>
-          <p class="text-sm text-gray-600">Managed by ID: {{ team.manager_id }}</p>
+          <p class="text-sm text-gray-600">Managed by : {{ team.manager.username }}</p>
   
           <h4 class="mt-2 font-semibold">Members:</h4>
           <ul class="ml-4 list-disc" v-if="team.members && team.members.length">
-            <li v-for="member in team.members" :key="member.id" class="mt-1">
-              {{ member.username }} ({{ member.email }})
-            </li>
-          </ul>
+  <li v-for="member in team.members" :key="member.id" class="mt-1 flex items-center justify-between">
+    <span>{{ member.username }} ({{ member.email }})</span>
+    <button 
+      @click="removeMemberFromTeam(team.id, member.id)" 
+      class="ml-2 bg-red-500 text-white p-1 rounded hover:bg-red-700">
+      Remove
+    </button>
+  </li>
+</ul>
+
           <p v-else>No members found for this team.</p>
   
           <div class="mt-4">
@@ -75,7 +81,6 @@
         const token = this.getAuthToken();
         if (token) {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          console.log(token)
         } else {
           console.error('Token JWT non trouvé');
         }
@@ -128,7 +133,18 @@
           .catch(error => {
             console.error('Error deleting team:', error.response ? error.response.data : error);
           });
-      }
+      },
+       // Supprimer un membre d'une équipe
+  removeMemberFromTeam(teamId, userId) {
+    this.setAuthHeader(); // Ajouter le token JWT à chaque requête
+    axios.delete(`http://localhost:4000/api/teams/${teamId}/members/${userId}`)
+      .then(() => {
+        this.fetchTeams(); // Recharger la liste des équipes après suppression du membre
+      })
+      .catch(error => {
+        console.error('Error removing member from team:', error.response ? error.response.data : error);
+      });
+  },
     }
   };
   </script>
