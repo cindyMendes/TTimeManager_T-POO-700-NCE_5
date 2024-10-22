@@ -27,12 +27,13 @@ defmodule TimeManager.Accounts.User do
   # end
 
   @roles ["general_manager", "manager", "employee"]  # Define valid roles
-  
+
+  @derive {Jason.Encoder, only: [:id, :username, :email, :role, :team_id, :inserted_at, :updated_at]}
 
   schema "users" do
     field :username, :string
     field :email, :string
-    field :role, :string, default: "employee" 
+    field :role, :string, default: "employee"
     belongs_to :team, TimeManager.Teams.Team
     field :password, :string, virtual: true
     field :password_hash, :string

@@ -107,6 +107,10 @@ end
     # Route pour associer un utilisateur à une équipe
     put("/teams/:team_id/users/:user_id", TeamController, :add_user_to_team)
 
+    #supprimer un membre d'équipe
+    delete "/teams/:team_id/members/:user_id", TeamController, :remove_member
+
+
     get("/reports/company/daily_hours", ReportController, :company_daily_hours)
     get("/reports/company/weekly_hours", ReportController, :company_weekly_hours)
 

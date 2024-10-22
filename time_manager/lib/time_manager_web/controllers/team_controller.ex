@@ -12,19 +12,39 @@ defmodule TimeManagerWeb.TeamController do
   # end
   def index(conn, _params) do
     teams = Teams.list_teams()
-    IO.inspect(teams, label: "Teams List")
 
-    case teams do
-      [] ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{errors: %{detail: "Aucune équipe trouvée"}})
-
-      _ ->
-        IO.inspect(teams, label: "Rendu des équipes avant JSON")
-        render(conn, "index.json", teams: teams)
-    end
+    conn
+    |> put_status(:ok)
+    |> json(%{
+      data: Enum.map(teams, fn team ->
+        %{
+          id: team.id,
+          name: team.name,
+          manager: %{
+            id: team.manager.id,
+            username: team.manager.username,
+            email: team.manager.email,
+            role: team.manager.role,
+            inserted_at: team.manager.inserted_at,
+            updated_at: team.manager.updated_at
+          },
+          members: Enum.map(team.members, fn member ->
+            %{
+              id: member.id,
+              username: member.username,
+              email: member.email,
+              role: member.role,
+              inserted_at: member.inserted_at,
+              updated_at: member.updated_at
+            }
+          end),
+          inserted_at: team.inserted_at,
+          updated_at: team.updated_at
+        }
+      end)
+    })
   end
+
 
 
 
@@ -81,6 +101,21 @@ def add_user_to_team(conn, %{"team_id" => team_id, "user_id" => user_id}) do
       |> json(%{errors: changeset})
   end
 end
+
+ # Action pour supprimer un membre d'une équipe
+ def remove_member(conn, %{"id" => team_id, "user_id" => user_id}) do
+  user = Accounts.get_user!(user_id)
+
+  case Accounts.update_user(user, %{team_id: nil}) do
+    {:ok, _user} ->
+      json(conn, %{message: "Member successfully removed from the team"})
+    {:error, changeset} ->
+      conn
+      |> put_status(:unprocessable_entity)
+      |> json(%{errors: changeset})
+  end
+end
+
 
 
 end
