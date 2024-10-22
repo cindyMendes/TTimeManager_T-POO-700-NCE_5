@@ -152,9 +152,27 @@ defmodule TimeManager.Accounts do
   @doc """
   Updates user role
   """
+  # def update_user_role(%User{} = user, new_role) do
+  #   user
+  #   |> User.changeset(%{role: new_role})
+  #   |> Repo.update()
+  # end
   def update_user_role(%User{} = user, new_role) do
-    user
-    |> User.changeset(%{role: new_role})
-    |> Repo.update()
-  end
+    IO.inspect(user, label: "User before role update")
+    IO.inspect(new_role, label: "New role")
+    
+    changeset = User.changeset(user, %{role: new_role})
+    
+    IO.inspect(changeset, label: "Changeset before update")
+    
+    case Repo.update(changeset) do
+      {:ok, updated_user} = result ->
+        IO.inspect(updated_user, label: "Successfully updated user")
+        result
+      {:error, changeset} = error ->
+        IO.inspect(changeset, label: "Update failed with changeset")
+        error
+    end
+  end 
+
 end

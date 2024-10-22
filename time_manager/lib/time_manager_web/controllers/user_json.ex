@@ -38,4 +38,11 @@ defmodule TimeManagerWeb.UserJSON do
     }
   end
 
+  @doc """
+  Renders the error message
+  """
+  def error(%{detail: message}) do
+    %{errors: %{detail: message}}
+  end
+
 end
