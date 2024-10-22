@@ -2,6 +2,7 @@ defmodule TimeManager.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
 
+
   # schema "users" do
   #   field :username, :string
   #   field :email, :string
@@ -27,6 +28,7 @@ defmodule TimeManager.Accounts.User do
 
   @roles ["general_manager", "manager", "employee"]  # Define valid roles
   
+
   schema "users" do
     field :username, :string
     field :email, :string

@@ -4,9 +4,17 @@ defmodule TimeManager.Teams do
   alias TimeManager.Teams.Team
 
   # Lister toutes les équipes
+  # def list_teams do
+  #   Repo.all(Team)
+  # end
+
+
   def list_teams do
     Repo.all(Team)
+    |> Repo.preload([:manager, :members])
   end
+
+
 
   # Récupérer une équipe par son ID
   def get_team!(id), do: Repo.get!(Team, id)
