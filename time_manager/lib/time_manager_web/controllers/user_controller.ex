@@ -52,17 +52,48 @@ defmodule TimeManagerWeb.UserController do
     end
   end
 
+  # def update(conn, %{"id" => id, "user" => user_params}) do
+  #   user = Accounts.get_user!(id)
+  #   user_params = filter_user_params(user_params)
+
+  #   with {:ok, %User{} = user} <- Accounts.update_user(user, user_params) do
+  #     render(conn, :show, user: user)
+  #   else
+  #     {:error, changeset} ->
+  #       conn
+  #       |> put_status(:unprocessable_entity)
+  #       |> render(TimeManagerWeb.ChangesetView, "error.json", changeset: changeset)
+  #   end
+  # end
+
   def update(conn, %{"id" => id, "user" => user_params}) do
     user = Accounts.get_user!(id)
     user_params = filter_user_params(user_params)
 
-    with {:ok, %User{} = user} <- Accounts.update_user(user, user_params) do
-      render(conn, :show, user: user)
-    else
+    case Accounts.update_user(user, user_params) do
+      {:ok, updated_user} ->
+        conn
+        |> put_status(:ok)
+        |> json(%{
+          data: %{
+            id: updated_user.id,
+            username: updated_user.username,
+            email: updated_user.email,
+            role: updated_user.role,
+            team_id: updated_user.team_id,
+            inserted_at: updated_user.inserted_at,
+            updated_at: updated_user.updated_at
+          }
+        })
+
       {:error, changeset} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> render(TimeManagerWeb.ChangesetView, "error.json", changeset: changeset)
+        |> json(%{
+          errors: %{
+            detail: format_changeset_errors(changeset)
+          }
+        })
     end
   end
 
