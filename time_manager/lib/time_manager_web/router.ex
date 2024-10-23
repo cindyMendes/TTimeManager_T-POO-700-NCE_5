@@ -65,14 +65,17 @@ end
 
     get("/dashboard", DashboardController, :show)
 
-       # Working Time routes
-       get("/workingtimes", WorkingTimeController, :index)
-       get("/workingtimes/:user_id/times", WorkingTimeController, :show_user_working_time) #recherche par user id
-       get("/workingtimes/:id", WorkingTimeController, :show) #recherche avec l'id du working time
-       get("/workingtime/:id", WorkingTimeController, :show) #recherche avec l'id du working time encore lol
-       post("/workingtime/:user_id", WorkingTimeController, :create)
-       put("/workingtime/:id", WorkingTimeController, :update)
-       delete("/workingtime/:id", WorkingTimeController, :delete)
+    # Working Time routes
+    get("/workingtimes", WorkingTimeController, :index)
+    get("/workingtimes/:user_id/times", WorkingTimeController, :show_user_working_time) #recherche par user id
+    get("/workingtimes/:id", WorkingTimeController, :show) #recherche avec l'id du working time
+    get("/workingtime/:id", WorkingTimeController, :show) #recherche avec l'id du working time encore lol
+    post("/workingtime/:user_id", WorkingTimeController, :create)
+    put("/workingtime/:id", WorkingTimeController, :update)
+    delete("/workingtime/:id", WorkingTimeController, :delete)
+
+    get("/reports/daily_hours", ReportController, :daily_hours)
+    get("/reports/weekly_hours", ReportController, :weekly_hours)
   end
 
   scope "/api", TimeManagerWeb do
