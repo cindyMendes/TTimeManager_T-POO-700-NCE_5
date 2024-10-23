@@ -32,7 +32,6 @@
       <!-- Chart Manager Card -->
       <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300 col-span-1 md:col-span-2 lg:col-span-3">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
-          <i class="fas fa-chart-bar mr-2"></i> Analyse des Patrouilles
         </h2>
         <ChartManager :userId="currentUserId" />
       </div>
