@@ -41,8 +41,11 @@ defmodule TimeManagerWeb.Endpoint do
   plug Plug.Head
   plug Plug.Session, @session_options
 
-  # Configure CORS correctly and only once
-  plug CORSPlug, origin: ["http://localhost:5173"]
+  # Configure CORS with dynamic origins
+  plug CORSPlug,
+    origin: String.split(System.get_env("CORS_ORIGINS") || "http://localhost:5173,https://time-manager-frontend-ac9007c3e870.herokuapp.com", ","),
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    headers: ["Authorization", "Content-Type", "Accept", "Origin", "User-Agent", "DNT", "Cache-Control", "X-Mx-ReqToken", "Keep-Alive", "X-Requested-With", "If-Modified-Since", "X-CSRF-Token"]
 
   # Router plug should come after other plugs
   plug TimeManagerWeb.Router
