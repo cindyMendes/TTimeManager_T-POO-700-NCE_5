@@ -27,6 +27,7 @@
     import { BarChart } from "vue-chart-3";
     import axios from "axios";
     import "chart.js/auto";
+import api from "@/services/api";
   
     export default defineComponent({
       components: {
@@ -74,11 +75,11 @@
             console.log(`Fetching data for user ID: ${userId.value}, from ${startDate} to ${endDate}`);
   
             // Fetch the weekly data from the backend
-            const response = await axios.get("http://localhost:4000/api/reports/weekly_hours", {
+            const response = await api.get("/reports/weekly_hours", {
               params: { user_id: userId.value, start_date: startDate, end_date: endDate },
               headers: { 'Accept': 'application/json' }
             });
-  
+
             console.log("API Response:", response.data);
   
             if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
