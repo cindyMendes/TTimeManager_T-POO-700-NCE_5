@@ -28,28 +28,12 @@
         />
       </div>
 
-      <div>
-        <label for="userId" class="block text-sm font-medium text-bat-silver mb-1">Code d'Identification :</label>
-        <input
-          type="text"
-          v-model="userId"
-          id="userId"
-          placeholder="Entrez l'ID unique"
-          class="w-full px-3 py-2 bg-bat-black border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow"
-        />
-      </div>
     </div>
 
     <!-- Boutons d'action -->
     <div class="grid grid-cols-2 gap-4 mb-6">
-      <button @click="createUser" class="bat-button bat-button-blue">
-        Enregistrer le Citoyen
-      </button>
       <button @click="updateUser" class="bat-button bat-button-blue">
         Mettre à Jour le Citoyen
-      </button>
-      <button @click="getUser" class="bat-button bat-button-gray">
-        Localiser le Citoyen
       </button>
       <button @click="getAllUsers" class="bat-button bat-button-yellow">
         Voir Tous les Citoyens
@@ -128,40 +112,40 @@ export default {
       return;
     }
 
-    // if (role !== 'general_manager') {
-    //   this.error = "Accès non autorisé. Seuls les general managers peuvent accéder à cette page.";
-    //   setTimeout(() => {
-    //     this.$router.push('/login');
-    //   }, 2000);
-    //   return;
-    // }
-
-    // If there's an ID in the URL, load that user
-    const userIdFromUrl = this.$route.query.id;
-    if (userIdFromUrl) {
-      this.userId = userIdFromUrl;
-      this.getUser();
+    // Load user data from localStorage if coming from login
+    if (this.$route.query.fromLogin === 'true') {
+      this.loadUserFromStorage();
+    } else {
+      // If there's an ID in the URL, load that user
+      const userIdFromUrl = this.$route.query.id;
+      if (userIdFromUrl) {
+        this.userId = userIdFromUrl;
+        this.getUser();
+      }
     }
   },
 
   methods: {
-    async createUser() {
-      try {
-        this.error = null;
-        this.users = [];
-        
-        const response = await api.post('/users', {
-          user: {
-            username: this.userName,
-            email: this.userEmail,
-          },
-        });
+    loadUserFromStorage() {
+      // Load user info from localStorage
+      this.userId = localStorage.getItem('userId') || '';
+      this.userEmail = localStorage.getItem('userEmail') || '';
+      this.userName = localStorage.getItem('userName') || '';
 
-        this.userData = response.data;
-        alert("Citoyen enregistré avec succès");
-        this.clearForm();
-      } catch (error) {
-        this.handleError(error, "l'enregistrement du citoyen");
+      // If we have user data, create userData object
+      if (this.userId && this.userEmail) {
+        this.userData = {
+          data: {
+            id: this.userId,
+            username: this.userName,
+            email: this.userEmail
+          }
+        };
+      }
+
+      // Update URL with user ID
+      if (this.userId) {
+        this.updateUrlWithUserId(this.userId);
       }
     },
 
