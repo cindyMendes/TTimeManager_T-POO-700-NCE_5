@@ -198,7 +198,8 @@ export default {
       loading.value = true;
       error.value = null;
       try {
-        const response = await api.get(`/workingtimes/${userId.value}`);
+      
+        const response = await api.get(`/workingtimes/${userId.value}/times`);
         workingTimes.value = response.data.data || [];
       } catch (err) {
         handleError(err, "lors de la récupération des journaux");
