@@ -1,13 +1,11 @@
 import axios from 'axios';
 
-// Check if we're in production mode
-const isProd = import.meta.env.PROD;
-
-// Use environment variable in production, localhost in development
-const ENV_URL = isProd ? import.meta.env.VITE_API_URL : 'http://localhost:4000';
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 const api = axios.create({
-  baseURL: `${ENV_URL}/api`
+  baseURL: isDevelopment 
+    ? 'http://localhost:4000/api'
+    : 'https://time-manager-backend-0d689d155ac3.herokuapp.com/api'
 });
 
 api.interceptors.request.use(

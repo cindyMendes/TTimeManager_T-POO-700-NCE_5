@@ -1,40 +1,33 @@
 #!/bin/sh
 
-# Print environnement variables for debugging
-echo "Environment variables:"
-echo "DB_HOST: $DB_HOST"
-echo "DB_PORT: $DB_PORT"
-echo "DB_USER: $DB_USER"
+echo "Starting initialization script..."
 
-# Generate the SECRET_KEY_BASE
-SECRET_KEY_BASE=$(mix phx.gen.secret)
-export SECRET_KEY_BASE
+# Set the environment
+export PHX_SERVER=true
 
-# Print the generated SECRET_KEY_BASE for debugging
-echo "Generated SECRET_KEY_BASE: $SECRET_KEY_BASE"
+# Parse DATABASE_URL and export variables if it exists
+if [ ! -z "$DATABASE_URL" ]; then
+    # Extract database connection info from DATABASE_URL
+    export DB_USER=$(echo $DATABASE_URL | awk -F[:/@] '{print $4}')
+    export DB_PASS=$(echo $DATABASE_URL | awk -F[:/@] '{print $5}')
+    export DB_HOST=$(echo $DATABASE_URL | awk -F[:/@] '{print $6}')
+    export DB_PORT=$(echo $DATABASE_URL | awk -F[:/@] '{print $7}' | awk -F/ '{print $1}')
+    export DB_NAME=$(echo $DATABASE_URL | awk -F[:/@] '{print $8}')
+fi
 
-# Set a timeout for database connection attempts (e.g., 5 minutes)
-TIMEOUT=300
-ELAPSED=0
+echo "Environment: $MIX_ENV"
+echo "Database Host: $DB_HOST"
+echo "Database Name: $DB_NAME"
+echo "Port: $PORT"
 
-echo "Waiting for database to be ready..."
-while ! pg_isready -q -h $DB_HOST -p $DB_PORT -U $DB_USER
-do
-  echo "$(date) - still waiting for database to start"
-  sleep 2
-  ELAPSED=$((ELAPSED+2))
-  if [ $ELAPSED -ge $TIMEOUT ]; then
-    echo "Timeout reached. Database is not ready."
-    exit 1
-  fi
-done
-echo "Database is ready!"
+# Install dependencies
+mix local.hex --force
+mix local.rebar --force
+mix deps.get --only prod
+mix compile
 
-echo "Creating database..."
-mix ecto.create || { echo "Failed to create database"; exit 1; }
+# Database operations
+mix ecto.migrate
 
-echo "Running migrations..."
-mix ecto.migrate || { echo "Failed to run migrations"; exit 1; }
-
-echo "Starting Phoenix server..."
-exec mix phx.server
+# Start the Phoenix server
+mix phx.server

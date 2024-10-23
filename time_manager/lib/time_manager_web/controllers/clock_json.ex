@@ -8,7 +8,14 @@ defmodule TimeManagerWeb.ClockJSON do
 
   # Renders a single clock for the show action
   def show(%{clock: clock}) do
-    %{data: clock_to_json(clock)}
+    %{
+      data: %{
+        id: clock.id,
+        user_id: clock.user_id,
+        time: clock.time,
+        status: clock.status
+      }
+    }
   end
 
   # Helper function to render a clock as JSON
