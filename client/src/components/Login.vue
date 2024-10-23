@@ -69,7 +69,7 @@
 </template>
 
 <script>
-import axios from 'axios'; 
+import api from '@/services/api_token';
 
 export default {
   name: 'Log-in',
@@ -83,51 +83,94 @@ export default {
   },
   methods: {
     async handleLogin() {
-  this.errors = {};
-  this.isLoading = true;
+      this.errors = {};
+      this.isLoading = true;
 
-  try {
-    const response = await axios.post('http://localhost:4000/api/auth/login', {
-      email: this.email,
-      password: this.password
-    });
+      try {
+        const response = await api.post('/auth/login', {
+          email: this.email,
+          password: this.password
+        });
 
-    console.log('RESPONSE', response)
-    const { token, user, xsrf_token } = response.data;
+        console.log('RESPONSE', response);
+        const { token, user } = response.data;
 
-    localStorage.setItem('token', token);
-    localStorage.setItem('role', user.role);
+        // Store authentication data
+        localStorage.setItem('token', token);
+        localStorage.setItem('role', user.role);
+        localStorage.setItem('userId', user.id);
 
-    console.log(`Utilisateur connecté avec le rôle : ${user.role}`);
+        console.log(`Utilisateur connecté avec le rôle : ${user.role}`);
 
-    switch (user.role) {
-      case 'employee':
-        this.$router.push('/employee-dashboard');
-        break;
-      case 'manager':
-        this.$router.push('/manager-dashboard');
-        break;
-      case 'general_manager':
-        this.$router.push('/general-manager-dashboard');
-        break;
-      case 'admin':
-        this.$router.push('/admin-dashboard');
-        break;
-      default:
-        this.$router.push('/');
+        // Redirect based on role
+        this.redirectBasedOnRole(user.role);
+      } catch (error) {
+        console.error('Erreur de connexion:', error);
+        this.handleLoginError(error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    redirectBasedOnRole(role) {
+      const roleRoutes = {
+        'employee': '/employee-dashboard',
+        'manager': '/manager-dashboard',
+        'general_manager': '/general-manager-dashboard',
+        'admin': '/admin-dashboard'
+      };
+
+      const route = roleRoutes[role] || '/';
+      this.$router.push(route);
+    },
+
+    handleLoginError(error) {
+      if (error.response) {
+        const status = error.response.status;
+        switch (status) {
+          case 401:
+            this.errors = { 
+              general: "Identifiants incorrects. Veuillez vérifier votre email et mot de passe." 
+            };
+            break;
+          case 403:
+            this.errors = { 
+              general: "Accès non autorisé." 
+            };
+            break;
+          case 404:
+            this.errors = { 
+              general: "Service d'authentification non disponible." 
+            };
+            break;
+          case 422:
+            this.errors = { 
+              general: "Données invalides. Veuillez vérifier vos informations." 
+            };
+            break;
+          default:
+            this.errors = { 
+              general: "Une erreur s'est produite lors de la connexion. Veuillez réessayer." 
+            };
+        }
+        console.log('Détails de l\'erreur:', error.response.data);
+      } else if (error.request) {
+        this.errors = { 
+          general: "Impossible de contacter le serveur. Veuillez vérifier votre connexion."
+        };
+      } else {
+        this.errors = { 
+          general: "Une erreur inattendue s'est produite. Veuillez réessayer."
+        };
+      }
     }
-  } catch (error) {
-    console.error('Erreur de connexion:', error);
+  },
 
-    if (error.response && error.response.data) {
-      this.errors = { general: "Échec de la connexion. Veuillez réessayer." };
-      console.log('Détails de l\'erreur:', error.response.data);
-    }
-  } finally {
-    this.isLoading = false;
-  }
-}
-
+  // Clear any stored auth data when component is mounted (optional)
+  mounted() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('userId');
   }
 }
 </script>

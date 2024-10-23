@@ -1,4 +1,5 @@
 <template>
+  <!-- Same template code but with loading states on buttons -->
   <div class="bg-bat-gray rounded-lg shadow-bat p-6">
     <h2 class="text-2xl font-bold mb-6 text-bat-yellow">Journal de Patrouille de Gotham</h2>
 
@@ -9,14 +10,13 @@
     </div>
 
     <!-- Error message -->
-    <div v-else-if="errorMessage" class="bg-red-900 border-l-4 border-bat-yellow text-bat-silver p-4 mb-4" role="alert">
+    <div v-else-if="error" class="bg-red-900 border-l-4 border-bat-yellow text-bat-silver p-4 mb-4" role="alert">
       <p class="font-bold">Alerte</p>
-      <p>{{ errorMessage }}</p>
+      <p>{{ error }}</p>
     </div>
 
     <div v-else-if="workingTimes.length > 0" class="space-y-4">
-      <div v-for="workingTime in workingTimes" :key="workingTime.id"
-        class="bg-bat-black p-4 rounded-lg shadow-inner">
+      <div v-for="workingTime in workingTimes" :key="workingTime.id" class="bg-bat-black p-4 rounded-lg shadow-inner">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <p class="text-bat-yellow font-semibold">ID de Mission :</p>
@@ -36,10 +36,18 @@
           </div>
         </div>
         <div class="flex gap-2 mt-2">
-          <button @click="editWorkingTime(workingTime)" class="bat-button bat-button-blue flex-1">
+          <button 
+            @click="editWorkingTime(workingTime)" 
+            class="bat-button bat-button-blue flex-1"
+            :disabled="loading"
+          >
             Modifier le Journal
           </button>
-          <button @click="deleteWorkingTime(workingTime.id)" class="bat-button bat-button-red flex-1">
+          <button 
+            @click="confirmDelete(workingTime.id)" 
+            class="bat-button bat-button-red flex-1"
+            :disabled="loading"
+          >
             Supprimer le Journal
           </button>
         </div>
@@ -50,7 +58,11 @@
       Aucun journal de patrouille trouvé. La nuit est calme.
     </div>
 
-    <button @click="showCreateForm" class="bat-button bat-button-yellow w-full mt-4">
+    <button 
+      @click="showCreateForm" 
+      class="bat-button bat-button-yellow w-full mt-4"
+      :disabled="loading"
+    >
       Créer un nouveau Journal
     </button>
 
@@ -59,22 +71,43 @@
       <h3 class="text-lg font-semibold mb-4 text-bat-yellow">
         Créer un Nouveau Journal de Patrouille
       </h3>
-      <form @submit.prevent="createWorkingTime" class="space-y-4">
+      <form @submit.prevent="handleCreate" class="space-y-4">
         <div>
           <label for="newStartTime" class="block text-sm font-medium text-bat-silver mb-1">Début de Patrouille :</label>
-          <input type="datetime-local" id="newStartTime" v-model="newWorkingTime.start" required
-            class="w-full px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow" />
+          <input 
+            type="datetime-local" 
+            id="newStartTime" 
+            v-model="newWorkingTime.start" 
+            required
+            :disabled="loading"
+            class="w-full px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow" 
+          />
         </div>
         <div>
           <label for="newEndTime" class="block text-sm font-medium text-bat-silver mb-1">Fin de Patrouille :</label>
-          <input type="datetime-local" id="newEndTime" v-model="newWorkingTime.end" required
-            class="w-full px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow" />
+          <input 
+            type="datetime-local" 
+            id="newEndTime" 
+            v-model="newWorkingTime.end" 
+            required
+            :disabled="loading"
+            class="w-full px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow" 
+          />
         </div>
         <div class="flex justify-end space-x-4">
-          <button type="button" @click="createMode = false" class="bat-button bat-button-gray">
+          <button 
+            type="button" 
+            @click="cancelCreate" 
+            class="bat-button bat-button-gray"
+            :disabled="loading"
+          >
             Annuler
           </button>
-          <button type="submit" class="bat-button bat-button-yellow">
+          <button 
+            type="submit" 
+            class="bat-button bat-button-yellow"
+            :disabled="loading"
+          >
             Créer le Journal
           </button>
         </div>
@@ -86,22 +119,43 @@
       <h3 class="text-lg font-semibold mb-4 text-bat-yellow">
         Modifier le Journal de Patrouille
       </h3>
-      <form @submit.prevent="updateWorkingTime" class="space-y-4">
+      <form @submit.prevent="handleUpdate" class="space-y-4">
         <div>
           <label for="editStartTime" class="block text-sm font-medium text-bat-silver mb-1">Début de Patrouille :</label>
-          <input type="datetime-local" id="editStartTime" v-model="editForm.start" required
-            class="w-full px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow" />
+          <input 
+            type="datetime-local" 
+            id="editStartTime" 
+            v-model="editForm.start" 
+            required
+            :disabled="loading"
+            class="w-full px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow" 
+          />
         </div>
         <div>
           <label for="editEndTime" class="block text-sm font-medium text-bat-silver mb-1">Fin de Patrouille :</label>
-          <input type="datetime-local" id="editEndTime" v-model="editForm.end" required
-            class="w-full px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow" />
+          <input 
+            type="datetime-local" 
+            id="editEndTime" 
+            v-model="editForm.end" 
+            required
+            :disabled="loading"
+            class="w-full px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow" 
+          />
         </div>
         <div class="flex justify-end space-x-4">
-          <button type="button" @click="editMode = false" class="bat-button bat-button-gray">
+          <button 
+            type="button" 
+            @click="cancelEdit" 
+            class="bat-button bat-button-gray"
+            :disabled="loading"
+          >
             Annuler
           </button>
-          <button type="submit" class="bat-button bat-button-yellow">
+          <button 
+            type="submit" 
+            class="bat-button bat-button-yellow"
+            :disabled="loading"
+          >
             Mettre à Jour le Journal
           </button>
         </div>
@@ -111,201 +165,251 @@
 </template>
 
 <script>
-import axios from "axios";
+import { ref, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import api from '@/services/api_token';
 
 export default {
   name: "WorkingTimes",
-  data() {
-    return {
-      userId: null,
-      workingTimes: [],
-      loading: true,
-      errorMessage: null,
-      workingTime: null,
-      editMode: false,
-      editForm: {
-        start: "",
-        end: "",
-      },
-      createMode: false,
+  
+  setup() {
+    const route = useRoute();
+    const workingTimes = ref([]);
+    const loading = ref(true);
+    const error = ref(null);
+    const editMode = ref(false);
+    const createMode = ref(false);
+    const userId = ref(null);
 
+    const editForm = ref({
+      id: null,
+      start: "",
+      end: "",
+    });
 
-      newWorkingTime: {
-        start: "",
-        end: "",
-      },
-    };
-  },
-  methods: {
-    async getWorkingTimes() {
-      this.loading = true;
-      this.errorMessage = null;
+    const newWorkingTime = ref({
+      start: "",
+      end: "",
+    });
+
+    const getWorkingTimes = async () => {
+      if (!userId.value) return;
+
+      loading.value = true;
+      error.value = null;
       try {
-        const response = await axios.get(
-          `http://localhost:4000/api/workingtimes/${this.userId}`
-        );
-        if (
-          response.data &&
-          response.data.data &&
-          response.data.data.length > 0
-        ) {
-          this.workingTimes = response.data.data;
-          this.workingTime = this.workingTimes[0];
-        } else {
-          this.errorMessage = "No patrol logs found for this user.";
-        }
-      } catch (error) {
-        this.errorMessage =
-          error.response?.data?.message ||
-          "Erreur lors de la récupération des heures de travail.";
-        console.error(
-          "Erreur lors de la récupération des heures de travail :",
-          error
-        );
+        const response = await api.get(`/workingtimes/${userId.value}`);
+        workingTimes.value = response.data.data || [];
+      } catch (err) {
+        handleError(err, "lors de la récupération des journaux");
       } finally {
-        this.loading = false;
+        loading.value = false;
       }
-    },
+    };
 
-    async deleteWorkingTime(id) {
+    const handleCreate = async () => {
+      if (!validateTimes(newWorkingTime.value)) return;
+
+      loading.value = true;
+      error.value = null;
       try {
-        const response = await axios.delete(
-          `http://localhost:4000/api/workingtime/${id}`
-        );
-        console.log("Working time deleted:", response.data);
-        this.workingTimes = this.workingTimes.filter(
-          (workingTime) => workingTime.id !== id
-        );
-      } catch (error) {
-        console.error("Error deleting working time:", error);
-        this.errorMessage = "Erreur lors de la suppression du journal.";
-      }
-    },
-
-    editWorkingTime(workingTime) {
-      this.editForm = {
-        id: workingTime.id,
-        start: this.formatTimeForInput(workingTime.start),
-        end: this.formatTimeForInput(workingTime.end),
-      };
-      this.editMode = true;
-    },
-
-    async updateWorkingTime() {
-      try {
-        if (!this.editForm.start || !this.editForm.end) {
-          console.error("Start or end time is missing.");
-          return;
-        }
-
-        const startUTC = new Date(this.editForm.start).toISOString();
-        const endUTC = new Date(this.editForm.end).toISOString();
-
         const data = {
           working_time: {
-            start: startUTC,
-            end: endUTC,
+            start: new Date(newWorkingTime.value.start).toISOString(),
+            end: new Date(newWorkingTime.value.end).toISOString(),
           }
         };
 
-        const response = await axios.put(
-          `http://localhost:4000/api/workingtime/${this.editForm.id}`,
-          data
-        );
-
-        console.log("Working time updated:", response.data);
-
-        const index = this.workingTimes.findIndex(workingTime => workingTime.id === this.editForm.id);
-        if (index !== -1) {
-          this.workingTimes[index] = {
-            ...this.workingTimes[index],
-            start: startUTC,
-            end: endUTC,
-          };
-        }
-
-        this.editMode = false;
-        this.editForm = {
-          start: "",
-          end: "",
-        };
-      } catch (error) {
-        console.error("Error updating working time:", error.response ? error.response.data : error);
-        this.errorMessage = "Erreur lors de la mise à jour du journal.";
+        await api.post(`/workingtime/${userId.value}`, data);
+        await getWorkingTimes();
+        cancelCreate();
+      } catch (err) {
+        handleError(err, "lors de la création du journal");
+      } finally {
+        loading.value = false;
       }
-    },
+    };
 
+    const handleUpdate = async () => {
+      if (!validateTimes(editForm.value)) return;
 
-    showCreateForm() {
-    this.createMode = true;
-    this.newWorkingTime = { start: "", end: "" }; // Réinitialiser le formulaire
-  },
+      loading.value = true;
+      error.value = null;
+      try {
+        const data = {
+          working_time: {
+            start: new Date(editForm.value.start).toISOString(),
+            end: new Date(editForm.value.end).toISOString(),
+          }
+        };
 
-  async createWorkingTime() {
-    // console.log('TOTO')
-    try {
-      if (!this.newWorkingTime.start || !this.newWorkingTime.end) {
-        console.error("Start or end time is missing.");
+        await api.put(`/workingtime/${editForm.value.id}`, data);
+        await getWorkingTimes();
+        cancelEdit();
+      } catch (err) {
+        handleError(err, "lors de la mise à jour du journal");
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const confirmDelete = async (id) => {
+      if (!confirm("Êtes-vous sûr de vouloir supprimer ce journal de patrouille ?")) {
         return;
       }
-      const startUTC = new Date(this.newWorkingTime.start).toISOString();
-      const endUTC = new Date(this.newWorkingTime.end).toISOString();
-      const data = {
-        working_time: {
-          start: startUTC,
-          end: endUTC,
-        }
+
+      loading.value = true;
+      error.value = null;
+      try {
+        await api.delete(`/workingtime/${id}`);
+        workingTimes.value = workingTimes.value.filter(wt => wt.id !== id);
+      } catch (err) {
+        handleError(err, "lors de la suppression du journal");
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const editWorkingTime = (workingTime) => {
+      editForm.value = {
+        id: workingTime.id,
+        start: formatTimeForInput(workingTime.start),
+        end: formatTimeForInput(workingTime.end),
       };
-      const response = await axios.post(
-        `http://localhost:4000/api/workingtime/${this.userId}`,
-        data
-      );
-      this.getWorkingTimes();
-      // console.log('RESPONSE CREATE',response)
-      this.workingTimes.push(response.data); 
-      this.createMode = false; 
-      this.newWorkingTime = { start: "", end: "" }; 
-    } catch (error) {
-      console.error("Error creating working time:", error);
-      this.errorMessage = "Erreur lors de la création du journal.";
-    }
-  },
+      editMode.value = true;
+    };
 
+    const showCreateForm = () => {
+      createMode.value = true;
+      newWorkingTime.value = { start: "", end: "" };
+    };
 
-    formatTimeForInput(dateString) {
+    const cancelCreate = () => {
+      createMode.value = false;
+      newWorkingTime.value = { start: "", end: "" };
+      error.value = null;
+    };
+
+    const cancelEdit = () => {
+      editMode.value = false;
+      editForm.value = { id: null, start: "", end: "" };
+      error.value = null;
+    };
+
+    const validateTimes = (form) => {
+      if (!form.start || !form.end) {
+        error.value = "Les dates de début et de fin sont requises.";
+        return false;
+      }
+
+      const start = new Date(form.start);
+      const end = new Date(form.end);
+
+      if (end <= start) {
+        error.value = "La date de fin doit être postérieure à la date de début.";
+        return false;
+      }
+
+      return true;
+    };
+
+    const formatTimeForInput = (dateString) => {
       const date = new Date(dateString);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      const hours = String(date.getHours()).padStart(2, "0");
-      const minutes = String(date.getMinutes()).padStart(2, "0");
+      return date.toISOString().slice(0, 16);
+    };
 
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
-    },
+    const formatTimeForDisplay = (time) => {
+      return new Date(time).toLocaleString('fr-FR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
 
-    formatTimeForDisplay(time) {
-      const date = new Date(time);
-      return date.toLocaleString();
-    },
-  },
+    const handleError = (error, context) => {
+      console.error(`Erreur ${context}:`, error);
+      if (error.response) {
+        switch (error.response.status) {
+          case 401:
+            error.value = "Session expirée. Veuillez vous reconnecter.";
+            setTimeout(() => window.location.href = '/login', 2000);
+            break;
+          case 403:
+            error.value = "Accès non autorisé.";
+            break;
+          case 404:
+            error.value = "Journal de patrouille non trouvé.";
+            break;
+          case 422:
+            error.value = "Données invalides. Veuillez vérifier les informations.";
+            break;
+          default:
+            error.value = `Une erreur est survenue ${context}. Veuillez réessayer.`;
+        }
+      } else if (error.request) {
+        error.value = "Impossible de contacter le serveur. Veuillez vérifier votre connexion.";
+      } else {
+        error.value = `Une erreur inattendue est survenue ${context}.`;
+      }
+    };
 
-  mounted() {
-    this.userId = this.$route.query.id;
-    this.getWorkingTimes();
-  },
+    onMounted(() => {
+      userId.value = route.query.id;
+      if (userId.value) {
+        getWorkingTimes();
+      }
+    });
 
-  //   formatTime(time) {
-  //   const date = new Date(time);
-  //   date.setHours(date.getHours() - 2);
-  //   return date.toLocaleString();
-  // },
+    watch(() => route.query.id, (newId) => {
+      userId.value = newId;
+      if (userId.value) {
+        getWorkingTimes();
+      }
+    });
 
-
-  watch: {
-    "$route.query.id": function (newId) {
-      this.userId = newId;
-      this.getWorkingTimes();
-    },
-  },
+    return {
+      workingTimes,
+      loading,
+      error,
+      editMode,
+      createMode,
+      editForm,
+      newWorkingTime,
+      userId,
+      editWorkingTime,
+      showCreateForm,
+      handleCreate,
+      handleUpdate,
+      confirmDelete,
+      cancelCreate,
+      cancelEdit,
+      formatTimeForDisplay,
+      formatTimeForInput
+    };
+  }
 };
 </script>
+
+<style scoped>
+.bat-button {
+  @apply py-2 px-4 rounded transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.bat-button-yellow {
+  @apply bg-bat-yellow text-bat-black hover:bg-yellow-200;
+}
+
+.bat-button-blue {
+  @apply bg-blue-500 text-white hover:bg-blue-600;
+}
+
+.bat-button-red {
+  @apply bg-red-500 text-white hover:bg-red-600;
+}
+
+.bat-button-gray {
+  @apply bg-bat-gray text-bat-silver hover:bg-opacity-90;
+}
+</style>

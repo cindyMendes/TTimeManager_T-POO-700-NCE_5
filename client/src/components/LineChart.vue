@@ -20,12 +20,17 @@ Linechart
     <!-- Chart container -->
     <div class="chart-container">
       <LineChart v-if="chartData" :chart-data="chartData" :options="chartOptions" />
-      <p v-else>{{ loadingMessage }}</p>
+      <p v-else class="text-bat-silver">{{ loadingMessage }}</p>
     </div>
 
     <!-- Total hours worked for the week -->
-    <div v-if="totalHours !== null" class="total-hours">
+    <div v-if="totalHours !== null" class="total-hours text-bat-silver">
       <p>Total hours worked for the week: <strong>{{ totalHours }}</strong></p>
+    </div>
+
+    <!-- Error display -->
+    <div v-if="error" class="mt-4 bg-red-900 text-bat-silver p-4 rounded-md">
+      {{ error }}
     </div>
   </div>
 </template>
@@ -34,10 +39,11 @@ Linechart
 import { defineComponent, ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { LineChart } from "vue-chart-3";
-import axios from "axios";
 import "chart.js/auto";
+import api from '@/services/api_token';
 
 export default defineComponent({
+  name: 'LineChartComponent',
   components: {
     LineChart,
   },
@@ -45,6 +51,8 @@ export default defineComponent({
     const chartData = ref(null);
     const loadingMessage = ref("Loading chart...");
     const totalHours = ref(null); // For holding the total hours worked for the week
+    const error = ref(null);
+    
     const chartOptions = ref({
       responsive: true,
       scales: {
@@ -53,163 +61,192 @@ export default defineComponent({
           title: {
             display: true,
             text: "Hours Worked",
+            color: '#C0C0C0'  // bat-silver color
           },
+          ticks: {
+            color: '#C0C0C0'
+          }
         },
         x: {
           title: {
             display: true,
             text: "Days of the Week",
+            color: '#C0C0C0'
           },
-        },
+          ticks: {
+            color: '#C0C0C0'
+          }
+        }
       },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#C0C0C0'
+          }
+        }
+      }
     });
 
     const route = useRoute();
     const userId = ref(route.query.id);
-    const selectedStartDate = ref(null); // For the date picker
-    const workingTimes = ref([]); // To store the working times fetched from the new API
-    const weeklyHours = ref([]); // To store the weekly_hours data
-    const totalWorkingHours = ref(0); // Total hours from workingTimes
-    const totalReportedHours = ref(0); // Total hours from weekly_hours
+    const selectedStartDate = ref(null);    // For the date picker
+    const workingTimes = ref([]);           // To store the working times fetched from the new API
+    const weeklyHours = ref([]);            // To store the weekly_hours data
+    const totalWorkingHours = ref(0);       // Total hours from workingTimes
+    const totalReportedHours = ref(0);      // Total hours from weekly_hours
 
-    // Function to fetch data from both APIs
     const fetchChartData = async () => {
       if (!selectedStartDate.value || !userId.value) {
-        loadingMessage.value = "Please select a start date and user.";
+        error.value = "Please select a start date and user.";
         return;
       }
+
+      error.value = null;
+      loadingMessage.value = "Loading chart...";
+      chartData.value = null;
 
       const startDate = selectedStartDate.value;
       const currentWeekDates = getCurrentWeekDates(startDate);
       const endDate = currentWeekDates[6];
 
-      await fetchWorkingTimesData(); // Fetch data from workingTimes API
-      await fetchWeeklyHoursData(startDate, endDate); // Fetch data from weekly_hours API
-
-      processChartData(currentWeekDates); // Process both data sets
-    };
-
-    // Fetch data from workingTimes API
-    const fetchWorkingTimesData = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/clocks/${userId.value}`);
-        console.log("WorkingTimes API response:", response.data);
-        workingTimes.value = response.data.data;
-      } catch (error) {
-        console.error("Error fetching workingTimes:", error);
-        loadingMessage.value = "Error fetching working times.";
+        await Promise.all([
+          fetchWorkingTimesData(),
+          fetchWeeklyHoursData(startDate, endDate)
+        ]);
+        processChartData(currentWeekDates);
+      } catch (err) {
+        handleError(err);
       }
     };
 
-    // Fetch data from weekly_hours API
+    const fetchWorkingTimesData = async () => {
+      try {
+        const response = await api.get(`/clocks/${userId.value}`);
+        workingTimes.value = response.data.data;
+      } catch (error) {
+        throw new Error("Error fetching working times");
+      }
+    };
+
     const fetchWeeklyHoursData = async (startDate, endDate) => {
       try {
-        const response = await axios.get("http://localhost:4000/api/reports/weekly_hours", {
-          params: { user_id: userId.value, start_date: startDate, end_date: endDate },
-          headers: { Accept: "application/json" },
+        const response = await api.get("/reports/weekly_hours", {
+          params: { 
+            user_id: userId.value, 
+            start_date: startDate, 
+            end_date: endDate 
+          }
         });
-        console.log("WeeklyHours API response:", response.data);
         weeklyHours.value = response.data.hours_by_day;
       } catch (error) {
-        console.error("Error fetching weekly_hours:", error);
-        loadingMessage.value = "Error fetching weekly hours.";
+        throw new Error("Error fetching weekly hours");
       }
     };
 
     const processChartData = (currentWeekDates) => {
-  const labels = currentWeekDates.map((date) => formatDateToLabel(date));
-  const workingHoursByDay = {};
+      const labels = currentWeekDates.map((date) => formatDateToLabel(date));
+      const workingHoursByDay = {};
 
-  // Vérifiez que les données de workingTimes.value sont correctes
-  console.log('Working Times:', workingTimes.value);
+      let startTime = null;
 
-  let startTime = null;
+      workingTimes.value.sort((a, b) => new Date(a.time) - new Date(b.time));
 
-  workingTimes.value.sort((a, b) => new Date(a.time) - new Date(b.time));
+      workingTimes.value.forEach((entry) => {
+        const dateKey = entry.time.split("T")[0];
+        const entryTime = new Date(entry.time).getTime();
 
-workingTimes.value.forEach((entry) => {
-  const dateKey = entry.time.split("T")[0];
-  const entryTime = new Date(entry.time).getTime();
+        if (entry.status === true) {
+          startTime = entryTime;
+        } else if (entry.status === false && startTime !== null && entryTime > startTime) {
+          const duration = (entryTime - startTime) / (1000 * 60 * 60);
+          workingHoursByDay[dateKey] = (workingHoursByDay[dateKey] || 0) + duration;
+          startTime = null;
+        }
+      });
 
-  if (entry.status === true) {
-    startTime = entryTime;
-    console.log(`Début de la période pour ${dateKey}: ${new Date(startTime).toISOString()}`);
-  } else if (entry.status === false && startTime !== null && entryTime > startTime) {
-    const duration = (entryTime - startTime) / (1000 * 60 * 60); // Durée en heures
-    workingHoursByDay[dateKey] = (workingHoursByDay[dateKey] || 0) + duration;
-    console.log(`Fin de la période. Durée pour ${dateKey}: ${duration}, Total: ${workingHoursByDay[dateKey]}`);
-    startTime = null; // Réinitialiser après calcul
-  } else {
-    console.warn(`Durée ignorée pour ${dateKey} à cause de données incohérentes.`);
-  }
-  });
+      const workingTimesData = labels.map((label) => {
+        const date = label.split(", ")[1];
+        return (workingHoursByDay[date] || 0);
+      });
 
-  const workingTimesData = labels.map((label) => {
-    const date = label.split(", ")[1]; 
-    return (workingHoursByDay[date] || 0); // Retourner les heures ou 0 si non trouvé
-  });
+      const weeklyHoursData = labels.map((label, index) => {
+        const date = currentWeekDates[index];
+        return (weeklyHours.value[date] || 0);
+      });
 
-  // Process weekly_hours data
-  const weeklyHoursData = labels.map((label, index) => {
-    const date = currentWeekDates[index]; 
-    return (weeklyHours.value[date] || 0); 
-  });
+      totalWorkingHours.value = workingTimesData.reduce((total, hours) => total + hours, 0);
+      totalReportedHours.value = weeklyHoursData.reduce((total, hours) => total + hours, 0);
 
-  // Calculez le total pour les deux datasets
-  totalWorkingHours.value = workingTimesData.reduce((total, hours) => total + hours, 0);
-  totalReportedHours.value = weeklyHoursData.reduce((total, hours) => total + hours, 0);
+      chartData.value = {
+        labels,
+        datasets: [
+          {
+            label: "Clock Times",
+            backgroundColor: "rgba(66, 165, 245, 0.5)",
+            borderColor: "#42A5F5",
+            fill: false,
+            data: workingTimesData,
+          },
+          {
+            label: "Reported Weekly Hours",
+            backgroundColor: "rgba(102, 187, 106, 0.5)",
+            borderColor: "#66BB6A",
+            fill: false,
+            data: weeklyHoursData,
+          },
+        ],
+      };
 
-  // Combinez les datasets dans les données du graphique
-  chartData.value = {
-    labels,
-    datasets: [
-      {
-        label: "Clock Times",
-        backgroundColor: "rgba(66, 165, 245, 0.5)",
-        borderColor: "#42A5F5",
-        fill: false,
-        data: workingTimesData,
-      },
-      {
-        label: "Reported Weekly Hours",
-        backgroundColor: "rgba(102, 187, 106, 0.5)",
-        borderColor: "#66BB6A",
-        fill: false,
-        data: weeklyHoursData,
-      },
-    ],
-  };
+      totalHours.value = totalWorkingHours.value + totalReportedHours.value;
+    };
 
-  totalHours.value = totalWorkingHours.value + totalReportedHours.value;
-};
-
-
-
-
-    // Helper function to get dates for the week based on the selected start date
     const getCurrentWeekDates = (startDate) => {
       const start = new Date(startDate);
       const dates = [];
       for (let i = 0; i < 7; i++) {
         const date = new Date(start);
-        date.setDate(start.getDate() + i); // Calculate each date (Monday to Sunday)
-        dates.push(date.toISOString().split("T")[0]); // Format as YYYY-MM-DD
+        date.setDate(start.getDate() + i);
+        dates.push(date.toISOString().split("T")[0]);
       }
       return dates;
     };
 
-    // Helper function to format the date as "MMM DD, YYYY" (e.g., "Oct 15, 2024")
     const formatDateToLabel = (dateString) => {
       const date = new Date(dateString);
-      const formatter = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
       return formatter.format(date);
+    };
+
+    const handleError = (error) => {
+      console.error('Error:', error);
+      if (error.response) {
+        switch (error.response.status) {
+          case 401:
+            error.value = "Session expirée. Veuillez vous reconnecter.";
+            break;
+          case 403:
+            error.value = "Accès non autorisé.";
+            break;
+          default:
+            error.value = "Erreur lors de la récupération des données.";
+        }
+      } else if (error.request) {
+        error.value = "Impossible de contacter le serveur.";
+      } else {
+        error.value = "Une erreur est survenue lors du chargement des données.";
+      }
     };
 
     // When the component mounts, set the initial selected date to today and fetch data
     onMounted(() => {
-      const today = new Date().toISOString().split("T")[0]; // Set to today as the default
+      const today = new Date().toISOString().split("T")[0];   // Set to today as the default
       selectedStartDate.value = today;
-      fetchChartData(); // Fetch the initial data based on today's date
+      fetchChartData();                                       // Fetch the initial data based on today's date
     });
 
     return {
@@ -219,6 +256,7 @@ workingTimes.value.forEach((entry) => {
       fetchChartData,
       loadingMessage,
       totalHours,
+      error
     };
   },
 });
@@ -239,4 +277,3 @@ workingTimes.value.forEach((entry) => {
   font-size: 16px;
 }
 </style>
-
