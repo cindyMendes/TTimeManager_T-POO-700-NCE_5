@@ -1,6 +1,8 @@
 <template>
-  <div class="bg-bat-gray rounded-lg shadow-bat p-6">
-    <h2 class="text-2xl font-bold mb-6 text-bat-yellow">Analytique du Vigilant de Gotham - Utilisateur {{ displayUserId }}</h2>
+  <div class="bg-bat-gray rounded-lg shadow-bat p-6 flex flex-col items-center justify-center min-h-screen">
+    <h2 class="text-2xl font-bold mb-6 text-bat-yellow text-center">
+      Analytique du Vigilant de Gotham - Utilisateur {{ displayUserId }}
+    </h2>
 
     <div v-if="loading" class="text-center py-4">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-bat-yellow"></div>
@@ -16,18 +18,21 @@
       Aucune donnée de patrouille disponible pour ce vigilant.
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="bg-bat-black p-4 rounded-lg shadow-inner" style="height: 400px;">
-        <h3 class="text-xl font-bold mb-4 text-bat-yellow">Répartition du Temps de Patrouille</h3>
+    <div v-else class="flex justify-center items-center w-full">
+      <div class="bg-bat-black p-4 rounded-lg shadow-inner" style="height: 400px; width: 400px;">
+        <h3 class="text-xl font-bold mb-4 text-bat-yellow text-center">Répartition du Temps de Patrouille</h3>
         <Pie :data="chartData" :options="chartOptions" />
       </div>
     </div>
 
-    <button @click="fetchData" class="mt-4 bg-bat-blue text-white py-2 px-4 rounded hover:bg-bat-blue-dark">
+    <button 
+      @click="fetchData" 
+      class="mt-8 bg-bat-blue text-white py-2 px-4 rounded hover:bg-bat-blue-dark mx-auto">
       Actualiser les Données
     </button>
   </div>
 </template>
+
 
 <script>
 import { ref, onMounted, computed, watch } from 'vue';
@@ -49,6 +54,7 @@ export default {
     const timeDistributionData = ref(null);
     const userId = ref(null);
     const displayUserId = computed(() => userId.value || 'Non sélectionné');
+
 
     const batColors = {
       yellow: '#FFFF00',
@@ -85,54 +91,65 @@ export default {
       return `${hours}h ${mins}m`;
     };
 
+
     const fetchData = async () => {
-      console.log("Fetching data for user ID:", userId.value);
-      if (!userId.value) {
-        errorMessage.value = "Aucun utilisateur sélectionné";
-        return;
-      }
-      loading.value = true;
-      errorMessage.value = null;
-      try {
-        const response = await api.get(`/workingtimes/${userId.value}`);
-        console.log("API response:", response.data);
-        workingTimes.value = response.data.data;
-        processChartData();
-      } catch (error) {
-        console.error("Error details:", error.response || error);
-        if (error.response?.status === 401) {
-          errorMessage.value = "Session expirée. Veuillez vous reconnecter.";
-          // Optionally redirect to login
-          // window.location.href = '/login';
-        } else if (error.response?.status === 403) {
-          errorMessage.value = "Accès non autorisé.";
-        } else {
-          errorMessage.value = "Erreur d'accès au Bat-Ordinateur. Veuillez réessayer.";
-        }
-      } finally {
-        loading.value = false;
-      }
-    };
+  console.log("Fetching data for user ID:", userId.value);
+  if (!userId.value) {
+    errorMessage.value = "Aucun utilisateur sélectionné";
+    return;
+  }
+  loading.value = true;
+  errorMessage.value = null;
+  try {
+    const response = await api.get(`/workingtimes/${userId.value}/times`);
+    // console.log("API response:", response.data);
 
-    const processChartData = () => {
-      if (!workingTimes.value || workingTimes.value.length === 0) {
-        console.log("No working times data available");
-        return;
-      }
-      const timeData = workingTimes.value.map(time => {
-        const start = new Date(time.start);
-        const end = new Date(time.end);
-        return (end - start) / (1000 * 60); // duration in minutes
-      });
+    const data = response.data.data;
+    if (Array.isArray(data)) {
+      workingTimes.value = data;  
+    } else if (typeof data === 'object' && data !== null) {
+      workingTimes.value = [data]; 
+    } else {
+      throw new Error("Les données retournées ne sont ni un tableau ni un objet valide.");
+    }
+    
+    processChartData(); 
+  } catch (error) {
+    console.error("Error details:", error.response || error);
+    if (error.response?.status === 401) {
+      errorMessage.value = "Session expirée. Veuillez vous reconnecter.";
+    } else if (error.response?.status === 403) {
+      errorMessage.value = "Accès non autorisé.";
+    } else {
+      errorMessage.value = "Erreur d'accès au Bat-Ordinateur. Veuillez réessayer.";
+    }
+  } finally {
+    loading.value = false;
+  }
+};
 
-      timeDistributionData.value = {
-        labels: workingTimes.value.map((_, index) => `Patrol ${index + 1}`),
-        datasets: [{
-          data: timeData,
-          backgroundColor: Object.values(batColors),
-        }],
-      };
-    };
+const processChartData = () => {
+  if (!Array.isArray(workingTimes.value) || workingTimes.value.length === 0) {
+    console.log("No working times data available");
+    return;
+  }
+
+  const timeData = workingTimes.value.map(time => {
+    const start = new Date(time.start);
+    const end = new Date(time.end);
+    return (end - start) / (1000 * 60); 
+  });
+
+  timeDistributionData.value = {
+    labels: workingTimes.value.map((_, index) => `Patrol ${index + 1}`),
+    datasets: [{
+      data: timeData,
+      backgroundColor: Object.values(batColors),
+    }],
+  };
+};
+
+
 
     onMounted(() => {
       userId.value = route.query.id;
@@ -153,6 +170,8 @@ export default {
         errorMessage.value = "Aucun utilisateur sélectionné";
       }
     });
+
+    
 
     const chartData = computed(() => ({
       labels: timeDistributionData.value ? timeDistributionData.value.labels : [],
