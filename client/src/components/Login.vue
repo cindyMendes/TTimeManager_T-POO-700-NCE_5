@@ -99,16 +99,37 @@ export default {
         localStorage.setItem('token', token);
         localStorage.setItem('role', user.role);
         localStorage.setItem('userId', user.id);
-
+        
+        // Fetch complete user info
+        const userDetails = await this.getUserDetails(user.id);
+        if (userDetails) {
+          // Store complete user info
+          localStorage.setItem('userEmail', userDetails.email);
+          localStorage.setItem('userName', userDetails.username || '');
+          localStorage.setItem('userDetails', JSON.stringify(userDetails));
+        }
+        
         console.log(`Utilisateur connecté avec le rôle : ${user.role}`);
 
-        // Redirect based on role
+        // Redirect based on role with user info
         this.redirectBasedOnRole(user.role);
       } catch (error) {
         console.error('Erreur de connexion:', error);
         this.handleLoginError(error);
       } finally {
         this.isLoading = false;
+      }
+    },
+
+    async getUserDetails(userId) {
+      try {
+        const response = await api.get(`/users/${userId}`);
+        console.log('User Details:', response.data);
+        return response.data.data;
+      } catch (error) {
+        console.error('Erreur lors de la récupération des détails utilisateur:', error);
+        this.handleError(error, "la récupération des détails utilisateur");
+        return null;
       }
     },
 
@@ -121,7 +142,12 @@ export default {
       };
 
       const route = roleRoutes[role] || '/';
-      this.$router.push(route);
+      this.$router.push({
+        path: route,
+        query: { 
+          fromLogin: 'true'
+        }
+      });
     },
 
     handleLoginError(error) {
@@ -166,11 +192,14 @@ export default {
     }
   },
 
-  // Clear any stored auth data when component is mounted (optional)
+  // Clear any stored auth data when component is mounted
   mounted() {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('userId');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userDetails');
   }
 }
 </script>
