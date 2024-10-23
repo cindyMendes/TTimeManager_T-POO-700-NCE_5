@@ -1,28 +1,51 @@
-# Utiliser une image de base Elixir
-FROM elixir:latest
+# Build stage
+FROM elixir:1.14-alpine AS builder
 
-# Installer Hex et Rebar
-RUN mix local.hex --force && mix local.rebar --force
+# Install build dependencies
+RUN apk add --no-cache build-base git postgresql-client
 
-# Définir le répertoire de travail
+# Set environment variables
+ENV MIX_ENV=prod
+
+# Install hex and rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# Set the working directory to /app
 WORKDIR /app
 
-# Copier les fichiers mix.exs et mix.lock
-COPY mix.exs mix.lock ./
-
-# Copier le reste des fichiers de l'application
+# Copy the entire project into the container
 COPY . .
 
-# Installer les dépendances
-RUN mix deps.get
+# Install dependencies
+RUN mix deps.get --only prod
+RUN mix deps.compile
 
-# RUN mix ecto.create
+# Compile assets
+RUN mix assets.deploy
 
-# Compiler l'application
+# Compile the application
 RUN mix compile
 
-# Exposer le port 4000
+# Build release
+RUN mix release
+
+# Final stage
+FROM alpine:3.16
+
+RUN apk add --no-cache openssl ncurses-libs libstdc++
+
+WORKDIR /app
+
+# Copy the release from the builder stage
+COPY --from=builder /app/_build/prod/rel/time_manager ./
+
+# Set necessary environment variables
+ENV LANG=C.UTF-8
+ENV PHX_SERVER=true
+
+# Expose the Phoenix port
 EXPOSE 4000
 
-# Commande pour démarrer l'application
-CMD ["mix", "phx.server"]
+# Start the Phoenix app
+CMD ["/app/bin/time_manager", "start"]
