@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-const isDevelopment = import.meta.env.MODE === 'development';
+const isDevelopment = !import.meta.env.PROD;
 console.log('Current environment:', import.meta.env.MODE);
+console.log('Is Production?', import.meta.env.PROD);
 console.log('Is development?', isDevelopment);
 
 const baseURL = isDevelopment 
