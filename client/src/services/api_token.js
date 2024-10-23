@@ -5,7 +5,7 @@ console.log('Current environment:', import.meta.env.MODE);
 console.log('Is development?', isDevelopment);
 
 const baseURL = isDevelopment 
-  ? 'https://time-manager-backend-0d689d155ac3.herokuapp.com/api'
+  ? 'http://localhost:4000/api'
   : 'https://time-manager-backend-0d689d155ac3.herokuapp.com/api';
 
 console.log('Using baseURL:', baseURL);
