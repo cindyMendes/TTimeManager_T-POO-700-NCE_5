@@ -32,12 +32,9 @@ config :time_manager, TimeManagerWeb.Endpoint,
   ],
   server: true,
   check_origin: false,
-  code_reloader: true,
-  debug_errors: true,
-  watchers: [
-    esbuild: {Esbuild, :install_and_run, [:time_manager, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:time_manager, ~w(--watch)]}
-  ]
+  code_reloader: false,
+  debug_errors: false,
+  watchers: []  # Remove watchers in production
 
 # Print current database configuration
 if Mix.env() == :dev do
