@@ -8,6 +8,34 @@ defmodule TimeManagerWeb.UserController do
   #   render(conn, :index, users: users)
   # end
 
+  def show_user_by_email_and_username(conn, %{"username" => username, "email" => email}) do
+    case Accounts.get_user_by_email_and_username(username, email) do
+      nil ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{
+          errors: %{
+            detail: "User not found with provided email and username"
+          }
+        })
+
+      user ->
+        conn
+        |> put_status(:ok)
+        |> json(%{
+          data: %{
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            team_id: user.team_id,
+            inserted_at: user.inserted_at,
+            updated_at: user.updated_at
+          }
+        })
+    end
+  end
+
   def index(conn, _params) do
     users = Accounts.list_users()
     conn
@@ -134,7 +162,7 @@ defmodule TimeManagerWeb.UserController do
 
   def delete_user(conn, %{"id" => id}) do
     user = Accounts.get_user!(id)
-    
+
     case Accounts.delete_user(user) do
       {:ok, deleted_user} ->
         conn

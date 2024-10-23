@@ -48,6 +48,7 @@ end
     pipe_through([:api, :auth, :ensure_auth])
 
     # Routes for all authenticated users
+    get("/users/lookup", UserController, :show_user_by_email_and_username)
     get("/users/profile", UserController, :show_current_user)
     get("/users/:id", UserController, :show_user)
     put("/users/profile", UserController, :update_current_user)
@@ -58,9 +59,20 @@ end
       only: [:index, :show, :create, :update, :delete]
     )
 
-    resources("/clocks", ClockController, only: [:index, :create, :show])
+    get("/clocks", ClockController, :index)
+    post("/clocks/:user_id", ClockController, :create)
+    get("/clocks/:user_id", ClockController, :show)
 
     get("/dashboard", DashboardController, :show)
+
+       # Working Time routes
+       get("/workingtimes", WorkingTimeController, :index)
+       get("/workingtimes/:user_id/times", WorkingTimeController, :show_user)
+       get("/workingtimes/:user_id", WorkingTimeController, :show_user_working_time)
+       get("/workingtime/:id", WorkingTimeController, :show)
+       post("/workingtime/:user_id", WorkingTimeController, :create)
+       put("/workingtime/:id", WorkingTimeController, :update)
+       delete("/workingtime/:id", WorkingTimeController, :delete)
   end
 
   scope "/api", TimeManagerWeb do
@@ -88,20 +100,6 @@ end
     # Report routes
     get("/reports/daily_hours", ReportController, :daily_hours)
     get("/reports/weekly_hours", ReportController, :weekly_hours)
-
-    # Working Time routes
-    get("/workingtimes", WorkingTimeController, :index)
-    get("/workingtimes/:user_id/times", WorkingTimeController, :show_user)
-    get("/workingtimes/:user_id", WorkingTimeController, :show_user_working_time)
-    get("/workingtime/:id", WorkingTimeController, :show)
-    post("/workingtime/:user_id", WorkingTimeController, :create)
-    put("/workingtime/:id", WorkingTimeController, :update)
-    delete("/workingtime/:id", WorkingTimeController, :delete)
-
-    # Clocking routes
-    get("/clocks", ClockController, :index)
-    post("/clocks/:user_id", ClockController, :create)
-    get("/clocks/:user_id", ClockController, :show)
 
     # Team routes
     resources("/teams", TeamController, except: [:new, :edit])
