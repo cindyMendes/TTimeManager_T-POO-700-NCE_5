@@ -17,191 +17,220 @@
       :aria-busy="loading"
       :class="[
         'bat-button w-full mb-4',
-        isClockedIn ? 'bat-button-blue' : 'bat-button-yellow',
+        isClockedIn ? 'bat-button-red' : 'bat-button-yellow',
         loading ? 'opacity-50 cursor-not-allowed' : ''
       ]"
     >
-      {{ isClockedIn ? 'Terminer la patrouille' : 'Débuter la patrouille' }}
+      <span v-if="loading" class="inline-flex items-center">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Traitement...
+      </span>
+      <span v-else>
+        {{ isClockedIn ? 'Terminer la patrouille' : 'Débuter la patrouille' }}
+      </span>
     </button>
 
     <button
       @click="refresh"
       :disabled="loading"
-      :aria-busy="loading"
       :class="['bat-button bat-button-gray w-full', loading ? 'opacity-50 cursor-not-allowed' : '']"
     >
       Actualiser le statut
     </button>
 
-    <div v-if="loading" class="mt-4 text-center" aria-live="polite">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-bat-yellow" role="status">
-        <span class="sr-only">Chargement en cours...</span>
-      </div>
-    </div>
-
-    <div v-if="error" class="mt-4 text-red-500" role="alert">
+    <!-- Error display -->
+    <div v-if="error" class="mt-4 bg-red-900 text-bat-silver p-4 rounded-md" role="alert">
       {{ error }}
     </div>
 
-    <div v-if="apiResponse" class="mt-4">
-      <h3 id="api-response-title" class="text-xl font-bold mb-2 text-bat-yellow">Détails de la réponse API :</h3>
-      <div class="overflow-x-auto">
-        <table aria-labelledby="api-response-title" class="min-w-full bg-bat-black border border-bat-gray rounded-lg overflow-hidden">
-          <caption class="sr-only">Détails de la dernière patrouille</caption>
-          <thead>
-            <tr class="bg-bat-yellow text-bat-black">
-              <th scope="col" class="py-2 px-4 border-b border-bat-gray">Statut</th>
-              <th scope="col" class="py-2 px-4 border-b border-bat-gray">Heure de début</th>
-              <th scope="col" class="py-2 px-4 border-b border-bat-gray">Heure de fin</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="py-2 px-4 border-b border-bat-gray">
-                {{ isClockedIn ? 'En cours' : (endTime ? 'Terminée' : 'Non commencée') }}
-              </td>
-              <td class="py-2 px-4 border-b border-bat-gray">
-                {{ startTime || 'Non définie' }}
-              </td>
-              <td class="py-2 px-4 border-b border-bat-gray">
-                {{ endTime || 'Non définie' }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Status display -->
+    <div v-if="lastClock" class="mt-6">
+      <h3 class="text-xl font-bold mb-4 text-bat-yellow">État actuel de la patrouille</h3>
+      <div class="bg-bat-black p-4 rounded-lg">
+        <dl class="grid grid-cols-1 gap-4">
+          <div>
+            <dt class="text-bat-silver font-medium">Statut:</dt>
+            <dd class="text-bat-yellow">{{ getStatusText }}</dd>
+          </div>
+          <div>
+            <dt class="text-bat-silver font-medium">Dernier pointage:</dt>
+            <dd class="text-bat-yellow">{{ formatDate(lastClock.time) }}</dd>
+          </div>
+          <div v-if="patrolDuration">
+            <dt class="text-bat-silver font-medium">Durée de la patrouille:</dt>
+            <dd class="text-bat-yellow">{{ patrolDuration }}</dd>
+          </div>
+        </dl>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import api from '@/services/api';
+import api from '@/services/api_token';
 
 export default {
+  name: 'TimeTracker',
+  
   setup() {
     const route = useRoute();
-    const isClockedIn = ref(false); 
-    const startTime = ref(null); 
-    const endTime = ref(null); 
+    const isClockedIn = ref(false);
+    const startTime = ref(null);
+    const endTime = ref(null);
     const loading = ref(false);
     const userId = ref(null);
     const error = ref(null);
-    const apiResponse = ref(null); 
+    const lastClock = ref(null);
+    const patrolId = ref(null);
 
-    
-    const patrolId = ref(null); 
+    const getStatusText = computed(() => {
+      if (!lastClock.value) return 'Aucune patrouille enregistrée';
+      return lastClock.value.status ? 'Patrouille en cours' : 'Patrouille terminée';
+    });
 
-    const getAuthToken = () => {
-  return localStorage.getItem('token'); // Récupérer le token du localStorage
-}
+    const formatDate = (date) => {
+      return new Date(date).toLocaleString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    };
 
-const setAuthHeader = () => {
-  const token = getAuthToken();
-  console.log(token)
-  if (!token) {
-    throw new Error('Token JWT non trouvé. L\'utilisateur doit se reconnecter.');
-  }
-  return {
-    headers: {
-      Authorization: `Bearer ${token}` // Ajouter le token dans les en-têtes
-    }
-  };
-};
+    const refresh = async () => {
+      if (!userId.value) {
+        error.value = "Aucun utilisateur sélectionné";
+        return;
+      }
 
-const refresh = async () => {
-  if (!userId.value) {
-    error.value = "Aucun utilisateur sélectionné";
-    return;
-  }
+      loading.value = true;
+      error.value = null;
 
-  // Réinitialiser les valeurs des clocks
-  isClockedIn.value = false;
-  startTime.value = null;
-  endTime.value = null;
+      try {
+        const response = await api.get(`/clocks/${userId.value}`);
+        const clocks = response.data.data;
 
-  loading.value = true;
-  error.value = null;
+        if (clocks && clocks.length > 0) {
+          lastClock.value = clocks[clocks.length - 1];
+          isClockedIn.value = lastClock.value.status === true;
+          
+          if (isClockedIn.value) {
+            startTime.value = formatDate(lastClock.value.time);
+            endTime.value = null;
+          } else {
+            endTime.value = formatDate(lastClock.value.time);
+          }
+        } else {
+          resetState();
+        }
+      } catch (err) {
+        handleError(err, "lors de la récupération des données");
+      } finally {
+        loading.value = false;
+      }
+    };
 
-  try {
-    // Appel API pour récupérer les clocks
-    const response = await api.get(`/clocks/${userId.value}`, setAuthHeader()); // Ajouter le token
-    apiResponse.value = response.data; 
-    console.log('API response:', response);
+    const toggleClock = async () => {
+      if (!userId.value) {
+        error.value = "Aucun utilisateur sélectionné";
+        return;
+      }
 
-    if (response.data && response.data.length > 0) {
-      const lastClock = response.data[response.data.length - 1];
-      isClockedIn.value = lastClock.status === 'true'; 
-      startTime.value = isClockedIn.value ? new Date(lastClock.time).toLocaleString() : startTime.value; 
-      endTime.value = !isClockedIn.value ? new Date(lastClock.time).toLocaleString() : endTime.value; 
-    }
+      loading.value = true;
+      error.value = null;
 
-    console.log('État rafraîchi');
-  } catch (err) {
-    console.error('Erreur lors du rafraîchissement:', err);
-    // error.value = "Erreur lors de la récupération des données";
-  } finally {
-    loading.value = false;
-  }
-};
+      try {
+        const newStatus = !isClockedIn.value;
+        const currentTime = new Date().toISOString();
 
+        const response = await api.post(`/clocks/${userId.value}`, {
+          time: currentTime,
+          status: newStatus
+        });
 
-const toggleClock = async () => {
-  if (!userId.value) {
-    error.value = "Aucun utilisateur sélectionné";
-    return;
-  }
-  loading.value = true;
-  error.value = null;
-  try {
-    const newStatus = !isClockedIn.value;
-    const response = await api.postClock(userId.value, new Date().toISOString(), newStatus);
-    
-    console.log('Response from API:', response); // Ajoute ce log pour voir la réponse complète
-    
-    apiResponse.value = response.data; 
-    patrolId.value = response.data.data?.id; // Utilise l'opérateur optionnel "?" pour éviter les erreurs si data ou id est indéfini
+        lastClock.value = response.data.data;
+        isClockedIn.value = newStatus;
+        
+        if (newStatus) {
+          startTime.value = formatDate(currentTime);
+          endTime.value = null;
+        } else {
+          endTime.value = formatDate(currentTime);
+        }
 
-    isClockedIn.value = newStatus;
+        await refresh(); // Refresh to get latest state
+      } catch (err) {
+        handleError(err, "lors du changement d'état");
+      } finally {
+        loading.value = false;
+      }
+    };
 
-    if (newStatus) {
-      startTime.value = new Date().toLocaleString(); 
-      endTime.value = null; 
-    } else {
-      endTime.value = new Date().toLocaleString();
-    }
+    const resetState = () => {
+      lastClock.value = null;
+      isClockedIn.value = false;
+      startTime.value = null;
+      endTime.value = null;
+      patrolId.value = null;
+    };
 
-    console.log('API response:', response);
-    console.log(newStatus ? 'Début du travail' : 'Arrêt du travail');
-  } catch (err) {
-    console.error('Erreur lors du changement d\'état:', err);
-    error.value = "Erreur lors du changement d'état";
-  } finally {
-    loading.value = false;
-  }
-};
+    const handleError = (error, context) => {
+      console.error(`Erreur ${context}:`, error);
+      if (error.response) {
+        switch (error.response.status) {
+          case 401:
+            error.value = "Session expirée. Veuillez vous reconnecter.";
+            setTimeout(() => window.location.href = '/login', 2000);
+            break;
+          case 403:
+            error.value = "Accès non autorisé.";
+            break;
+          case 404:
+            error.value = "Utilisateur non trouvé.";
+            break;
+          case 422:
+            error.value = "Données invalides. Veuillez réessayer.";
+            break;
+          default:
+            error.value = `Une erreur est survenue ${context}. Veuillez réessayer.`;
+        }
+      } else if (error.request) {
+        error.value = "Impossible de contacter le serveur. Veuillez vérifier votre connexion.";
+      } else {
+        error.value = `Une erreur inattendue est survenue ${context}.`;
+      }
+    };
 
-
-
+    const calculatePatrolDuration = () => {
+      if (!startTime.value) return null;
+      const start = new Date(startTime.value);
+      const end = endTime.value ? new Date(endTime.value) : new Date();
+      const diff = end - start;
+      const hours = Math.floor(diff / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      return `${hours}h ${minutes}m`;
+    };
 
     onMounted(() => {
       userId.value = route.query.id;
-      console.log("User ID from URL:", userId.value);
       if (userId.value) {
         refresh();
-      } else {
-        error.value = "Aucun utilisateur sélectionné";
       }
     });
 
     watch(() => route.query.id, (newId) => {
       userId.value = newId;
-      console.log("User ID changed to:", userId.value);
       if (userId.value) {
         refresh();
       } else {
-        error.value = "Aucun utilisateur sélectionné";
+        resetState();
       }
     });
 
@@ -210,10 +239,12 @@ const toggleClock = async () => {
       startTime,
       endTime,
       loading,
-      userId,
       error,
-      apiResponse, 
-      patrolId, 
+      lastClock,
+      patrolId,
+      getStatusText,
+      patrolDuration: computed(calculatePatrolDuration),
+      formatDate,
       refresh,
       toggleClock
     };
@@ -221,3 +252,20 @@ const toggleClock = async () => {
 };
 </script>
 
+<style scoped>
+.bat-button {
+  @apply py-2 px-4 rounded-md transition-colors duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.bat-button-yellow {
+  @apply bg-bat-yellow text-bat-black hover:bg-yellow-200 focus:ring-bat-yellow;
+}
+
+.bat-button-red {
+  @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+}
+
+.bat-button-gray {
+  @apply bg-bat-gray text-bat-silver hover:bg-opacity-90 focus:ring-bat-gray;
+}
+</style>
