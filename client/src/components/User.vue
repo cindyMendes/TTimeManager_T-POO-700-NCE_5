@@ -172,7 +172,7 @@ export default {
 
         let response;
         if (this.userName && this.userEmail) {
-          response = await api.get('/users/user', {
+          response = await api.get('/users/lookup', {
             params: {
               username: this.userName,
               email: this.userEmail,
