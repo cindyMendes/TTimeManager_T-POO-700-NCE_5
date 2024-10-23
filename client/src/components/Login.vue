@@ -61,7 +61,7 @@
       </div>
 
       <div v-if="Object.keys(errors).length > 0" class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-        <strong class="font-bold">Erreur !</strong>
+        <strong class="font-bold">Erreur ! </strong>
         <span class="block sm:inline">{{ errors.general || "Une erreur s'est produite. Veuillez réessayer." }}</span>
       </div>
     </div>
