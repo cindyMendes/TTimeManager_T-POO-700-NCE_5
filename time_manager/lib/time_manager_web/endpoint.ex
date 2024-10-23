@@ -43,9 +43,26 @@ defmodule TimeManagerWeb.Endpoint do
 
   # Configure CORS with dynamic origins
   plug CORSPlug,
-    origin: String.split(System.get_env("CORS_ORIGINS") || "http://localhost:5173,https://time-manager-frontend-ac9007c3e870.herokuapp.com", ","),
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    headers: ["Authorization", "Content-Type", "Accept", "Origin", "User-Agent", "DNT", "Cache-Control", "X-Mx-ReqToken", "Keep-Alive", "X-Requested-With", "If-Modified-Since", "X-CSRF-Token"]
+    origin: ["http://localhost:5173", "https://time-manager-frontend-ac9007c3e870.herokuapp.com"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    expose: ["Authorization"],
+    credentials: true,
+    headers: [
+      "Authorization",
+      "Content-Type",
+      "Accept",
+      "Origin",
+      "User-Agent",
+      "DNT",
+      "Cache-Control",
+      "X-Mx-ReqToken",
+      "Keep-Alive",
+      "X-Requested-With",
+      "If-Modified-Since",
+      "X-CSRF-Token",
+      "Access-Control-Allow-Origin"
+    ],
+    max_age: 86400  # 24 hours
 
   # Router plug should come after other plugs
   plug TimeManagerWeb.Router
