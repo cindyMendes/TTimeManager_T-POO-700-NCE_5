@@ -93,68 +93,97 @@ export default {
     
     const patrolId = ref(null); 
 
-    const refresh = async () => {
-      if (!userId.value) {
-        error.value = "Aucun utilisateur sélectionné";
-        return;
-      }
-      loading.value = true;
-      error.value = null;
-      try {
-        const response = await api.getClocks(userId.value);
-        apiResponse.value = response.data; 
-        console.log('API response:', response);
-        if (response.data && response.data.length > 0) {
-          const lastClock = response.data[response.data.length - 1];
-          isClockedIn.value = lastClock.status === 'true'; 
-          startTime.value = isClockedIn.value ? new Date(lastClock.time).toLocaleString() : startTime.value; 
-          endTime.value = !isClockedIn.value ? new Date(lastClock.time).toLocaleString() : endTime.value; 
-        } else {
-          isClockedIn.value = false;
-          startTime.value = null;
-          endTime.value = null;
-        }
-        console.log('État rafraîchi');
-      } catch (err) {
-        console.error('Erreur lors du rafraîchissement:', err);
-        error.value = "Erreur lors de la récupération des données";
-      } finally {
-        loading.value = false;
-      }
-    };
+    const getAuthToken = () => {
+  return localStorage.getItem('token'); // Récupérer le token du localStorage
+}
 
-    const toggleClock = async () => {
-      if (!userId.value) {
-        error.value = "Aucun utilisateur sélectionné";
-        return;
-      }
-      loading.value = true;
-      error.value = null;
-      try {
-        const newStatus = !isClockedIn.value;
-        const response = await api.postClock(userId.value, new Date().toISOString(), newStatus);
-        apiResponse.value = response.data; 
+const setAuthHeader = () => {
+  const token = getAuthToken();
+  console.log(token)
+  if (!token) {
+    throw new Error('Token JWT non trouvé. L\'utilisateur doit se reconnecter.');
+  }
+  return {
+    headers: {
+      Authorization: `Bearer ${token}` // Ajouter le token dans les en-têtes
+    }
+  };
+};
 
-       
-        patrolId.value = response.data.data.id;
-        isClockedIn.value = newStatus;
+const refresh = async () => {
+  if (!userId.value) {
+    error.value = "Aucun utilisateur sélectionné";
+    return;
+  }
 
-        if (newStatus) {
-          startTime.value = new Date().toLocaleString(); 
-          endTime.value = null; 
-        } else {
-          endTime.value = new Date().toLocaleString();
-        }
+  // Réinitialiser les valeurs des clocks
+  isClockedIn.value = false;
+  startTime.value = null;
+  endTime.value = null;
 
-        console.log('API response:', response);
-        console.log(newStatus ? 'Début du travail' : 'Arrêt du travail');
-      } catch (err) {
-        console.error('Erreur lors du changement d\'état:', err);
-        error.value = "Erreur lors du changement d'état";
-      } finally {
-        loading.value = false;
-      }
-    };
+  loading.value = true;
+  error.value = null;
+
+  try {
+    // Appel API pour récupérer les clocks
+    const response = await api.get(`/clocks/${userId.value}`, setAuthHeader()); // Ajouter le token
+    apiResponse.value = response.data; 
+    console.log('API response:', response);
+
+    if (response.data && response.data.length > 0) {
+      const lastClock = response.data[response.data.length - 1];
+      isClockedIn.value = lastClock.status === 'true'; 
+      startTime.value = isClockedIn.value ? new Date(lastClock.time).toLocaleString() : startTime.value; 
+      endTime.value = !isClockedIn.value ? new Date(lastClock.time).toLocaleString() : endTime.value; 
+    }
+
+    console.log('État rafraîchi');
+  } catch (err) {
+    console.error('Erreur lors du rafraîchissement:', err);
+    // error.value = "Erreur lors de la récupération des données";
+  } finally {
+    loading.value = false;
+  }
+};
+
+
+const toggleClock = async () => {
+  if (!userId.value) {
+    error.value = "Aucun utilisateur sélectionné";
+    return;
+  }
+  loading.value = true;
+  error.value = null;
+  try {
+    const newStatus = !isClockedIn.value;
+    const response = await api.postClock(userId.value, new Date().toISOString(), newStatus);
+    
+    console.log('Response from API:', response); // Ajoute ce log pour voir la réponse complète
+    
+    apiResponse.value = response.data; 
+    patrolId.value = response.data.data?.id; // Utilise l'opérateur optionnel "?" pour éviter les erreurs si data ou id est indéfini
+
+    isClockedIn.value = newStatus;
+
+    if (newStatus) {
+      startTime.value = new Date().toLocaleString(); 
+      endTime.value = null; 
+    } else {
+      endTime.value = new Date().toLocaleString();
+    }
+
+    console.log('API response:', response);
+    console.log(newStatus ? 'Début du travail' : 'Arrêt du travail');
+  } catch (err) {
+    console.error('Erreur lors du changement d\'état:', err);
+    error.value = "Erreur lors du changement d'état";
+  } finally {
+    loading.value = false;
+  }
+};
+
+
+
 
     onMounted(() => {
       userId.value = route.query.id;

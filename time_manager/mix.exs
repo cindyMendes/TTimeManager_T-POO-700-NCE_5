@@ -64,7 +64,7 @@ defmodule TimeManager.MixProject do
       {:pbkdf2_elixir, "~> 1.4"},
       {:joken, "~> 2.5"},
       {:guardian, "~> 2.0"},
-
+      {:hackney, "~> 1.9"},
     ]
   end
 

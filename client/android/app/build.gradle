@@ -4,7 +4,7 @@ android {
     namespace "com.timemanager.app"  // Changed from "package.json"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.example.yourappname"  // Changed from "package.json"
+        applicationId "com.timemanager.app"  // Changed from "package.json"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -1,13 +1,9 @@
-import axios from 'axios'
+import axios from 'axios';
 
-// Check if we're in production mode
-const isProd = import.meta.env.PROD;
-
-// Use environment variable in production, localhost in development
-const ENV_URL = isProd ? import.meta.env.VITE_API_URL : 'http://localhost:4000';
+console.log('VUE_APP_API_URL:', process.env.VUE_APP_API_URL);
 
 const apiClient = axios.create({
-  baseURL: `${ENV_URL}/api`,
+  baseURL: process.env.VUE_APP_API_URL || "http://elixir-backend:4000",
   headers: {
     'Content-Type': 'application/json'
   },
@@ -15,7 +11,7 @@ const apiClient = axios.create({
 
 // Intercepteur pour ajouter le token JWT à chaque requête
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
+  const token = localStorage.getItem('token');
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
