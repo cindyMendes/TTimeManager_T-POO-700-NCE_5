@@ -1,11 +1,17 @@
 import axios from 'axios';
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = import.meta.env.MODE === 'development';
+console.log('Current environment:', import.meta.env.MODE);
+console.log('Is development?', isDevelopment);
+
+const baseURL = isDevelopment 
+  ? 'http://localhost:4000/api'
+  : 'https://time-manager-backend-0d689d155ac3.herokuapp.com/api';
+
+console.log('Using baseURL:', baseURL);
 
 const api = axios.create({
-  baseURL: isDevelopment 
-    ? 'http://localhost:4000/api'
-    : 'https://time-manager-backend-0d689d155ac3.herokuapp.com/api'
+  baseURL: baseURL
 });
 
 api.interceptors.request.use(
@@ -14,6 +20,7 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log('Making request to:', config.baseURL + config.url);
     return config;
   },
   (error) => {
