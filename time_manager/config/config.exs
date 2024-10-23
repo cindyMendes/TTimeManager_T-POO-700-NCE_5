@@ -28,7 +28,7 @@ config :time_manager, TimeManagerWeb.Guardian,
   issuer: "time_manager",
   allowed_algos: ["HS256"],               # Algorithm used to sign tokens
   ttl: {30, :days}                        # Time-to-live for JWT tokens
-import_config "config.secret.exs"         # Import secrets from secret.config.exs if it exists
+# import_config "config.secret.exs"         # Import secrets from secret.config.exs if it exists
 
 
 # Configures the mailer
