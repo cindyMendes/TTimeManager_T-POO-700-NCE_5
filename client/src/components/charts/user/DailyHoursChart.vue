@@ -1,170 +1,245 @@
 <template>
-    <div class="bg-bat-gray rounded-lg shadow-bat p-6">
-        <h2 class="text-1xl font-bold mb-6 text-bat-yellow">Daily Hours Chart</h2>
+  <div class="bg-bat-gray rounded-lg shadow-bat p-6">
+    <h2 class="text-1xl font-bold mb-6 text-bat-yellow">Daily Hours Chart</h2>
 
-        <!-- Date picker to select the start of the week -->
-        <div class="date-picker">
-            <label for="start-date" class="block text-sm font-medium text-bat-silver mb-1">Select Start Date:</label>
-            <input type="date" id="start-date" v-model="selectedStartDate" @change="fetchChartData" class="px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow" />
-        </div>
-
-        <!-- Chart container -->
-        <div class="chart-container">
-            <BarChart v-if="chartData" :chart-data="chartData" :options="chartOptions" />
-            <p v-else>{{ loadingMessage }}</p>
-        </div>
-    
-        <!-- Total hours worked for the week -->
-        <div v-if="totalHours !== null" class="total-hours">
-            <p>Total hours worked for the week: <strong>{{ totalHours }}</strong></p>
-        </div>
+    <!-- Date picker -->
+    <div class="date-picker">
+      <label for="start-date" class="block text-sm font-medium text-bat-silver mb-1">
+        Select Start Date:
+      </label>
+      <input 
+        type="date" 
+        id="start-date" 
+        v-model="selectedStartDate" 
+        @change="fetchChartData"
+        :disabled="loading"
+        class="px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow" 
+      />
     </div>
-</template>
-  
-<script>
-    import { defineComponent, ref, onMounted } from "vue";
-    import { useRoute } from "vue-router";
-    import { BarChart } from "vue-chart-3";
-    import axios from "axios";
-    import "chart.js/auto";
-import api from "@/services/api";
-  
-    export default defineComponent({
-      components: {
-        BarChart,
-      },
-      setup() {
-        const chartData = ref(null);
-        const loadingMessage = ref("Loading chart...");
-        const totalHours = ref(null);  // For holding the total hours worked for the week
-        const chartOptions = ref({
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: "Hours Worked",
-              },
-            },
-            x: {
-              title: {
-                display: true,
-                text: "Days of the Week",
-              },
-            },
-          },
-        });
-  
-        const route = useRoute();
-        const userId = ref(route.query.id);
-        const selectedStartDate = ref(null); // For the date picker
-  
-        // Function to fetch chart data
-        const fetchChartData = async () => {
-          try {
-            if (!selectedStartDate.value) {
-              loadingMessage.value = "Please select a start date.";
-              return;
-            }
-  
-            const startDate = selectedStartDate.value;
-            const currentWeekDates = getCurrentWeekDates(startDate); // Get the week's dates based on the selected start date
-            const endDate = currentWeekDates[6];  // End date is 6 days after start date
-  
-            console.log(`Fetching data for user ID: ${userId.value}, from ${startDate} to ${endDate}`);
-  
-            // Fetch the weekly data from the backend
-            const response = await api.get("/reports/weekly_hours", {
-              params: { user_id: userId.value, start_date: startDate, end_date: endDate },
-              headers: { 'Accept': 'application/json' }
-            });
 
-            console.log("API Response:", response.data);
+    <!-- Loading state -->
+    <div v-if="loading" class="flex justify-center items-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-bat-yellow"></div>
+      <span class="ml-2 text-bat-silver">Loading chart data...</span>
+    </div>
+
+    <!-- Error message -->
+    <div v-else-if="error" class="bg-red-900 text-bat-silver p-4 rounded-md my-4">
+      {{ error }}
+    </div>
+
+    <!-- Chart -->
+    <div v-else class="chart-container">
+      <BarChart 
+        v-if="chartData" 
+        :chart-data="chartData" 
+        :options="chartOptions" 
+      />
+      <p v-else class="text-bat-silver text-center py-4">
+        No data available for the selected period
+      </p>
+    </div>
+    
+    <!-- Total hours -->
+    <div v-if="totalHours !== null" class="total-hours mt-4 text-bat-silver">
+      <p>Total hours worked: <strong class="text-bat-yellow">{{ totalHours.toFixed(1) }}</strong></p>
+    </div>
+  </div>
+</template>
+
+<script>
+import { defineComponent, ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { BarChart } from "vue-chart-3";
+import "chart.js/auto";
+import api from '@/services/api_token';
+
+export default defineComponent({
+  name: 'HoursChart',
   
-            if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
-              throw new Error('Received HTML instead of JSON. Check API endpoint and server configuration.');
-            }
-  
-            const hoursByDay = response.data.hours_by_day || {};
-            const labels = currentWeekDates.map(date => formatDateToLabel(date));
-  
-            const hoursWorked = labels.map((label, index) => {
-              const date = currentWeekDates[index]; // Use the ISO format for data lookup
-              const hours = hoursByDay[date] || 0;
-              return hours;
-            });
-  
-            // Calculate total hours worked for the week
-            totalHours.value = hoursWorked.reduce((total, hours) => total + hours, 0);
-  
-            chartData.value = {
-              labels, // Use formatted labels
-              datasets: [
-                {
-                  label: "Hours Worked",
-                  backgroundColor: "#42A5F5",
-                  data: hoursWorked,
-                },
-              ],
-            };
-          } catch (error) {
-            console.error("Error fetching chart data:", error);
-            loadingMessage.value = "Error loading chart data. Please try again later.";
+  components: {
+    BarChart,
+  },
+
+  setup() {
+    const route = useRoute();
+    const chartData = ref(null);
+    const loading = ref(false);
+    const error = ref(null);
+    const totalHours = ref(null);
+    const userId = ref(route.query.id);
+    const selectedStartDate = ref(null);
+
+    const chartOptions = ref({
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Hours Worked",
+            color: '#C0C0C0'  // bat-silver
+          },
+          ticks: {
+            color: '#C0C0C0'
           }
-        };
-  
-        // Helper function to get dates for the week based on the selected start date
-        const getCurrentWeekDates = (startDate) => {
-          const start = new Date(startDate);
-          const dates = [];
-          for (let i = 0; i < 7; i++) {
-            const date = new Date(start);
-            date.setDate(start.getDate() + i);  // Calculate each date (Monday to Sunday)
-            dates.push(date.toISOString().split('T')[0]);  // Format as YYYY-MM-DD
+        },
+        x: {
+          title: {
+            display: true,
+            text: "Days of the Week",
+            color: '#C0C0C0'
+          },
+          ticks: {
+            color: '#C0C0C0'
           }
-          return dates;
-        };
-  
-        // Helper function to format the date as "MMM DD, YYYY" (e.g., "Oct 15, 2024")
-        const formatDateToLabel = (dateString) => {
-          const date = new Date(dateString);
-          const formatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-          return formatter.format(date);
-        };
-  
-        // When the component mounts, set the initial selected date to today (if needed)
-        onMounted(() => {
-          const today = new Date().toISOString().split('T')[0]; // Set to today as the default
-          selectedStartDate.value = today;
-          fetchChartData();  // Fetch the initial data based on today's date
-        });
-  
-        return {
-          chartData,
-          chartOptions,
-          selectedStartDate,
-          fetchChartData,
-          loadingMessage,
-          totalHours,
-        };
+        }
       },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#C0C0C0'
+          }
+        }
+      }
     });
+
+    const fetchChartData = async () => {
+      if (!selectedStartDate.value || !userId.value) {
+        error.value = "Please select a start date and ensure user is selected.";
+        return;
+      }
+
+      loading.value = true;
+      error.value = null;
+
+      try {
+        const startDate = selectedStartDate.value;
+        const currentWeekDates = getCurrentWeekDates(startDate);
+        const endDate = currentWeekDates[6];
+
+        const response = await api.get("/reports/weekly_hours", {
+          params: { 
+            user_id: userId.value, 
+            start_date: startDate, 
+            end_date: endDate 
+          }
+        });
+
+        if (!response.data || !response.data.hours_by_day) {
+          throw new Error('Invalid data format received from server');
+        }
+
+        const hoursByDay = response.data.hours_by_day;
+        const labels = currentWeekDates.map(date => formatDateToLabel(date));
+        const hoursWorked = labels.map((_, index) => {
+          const date = currentWeekDates[index];
+          return hoursByDay[date] || 0;
+        });
+
+        totalHours.value = hoursWorked.reduce((total, hours) => total + hours, 0);
+
+        chartData.value = {
+          labels,
+          datasets: [{
+            label: "Hours Worked",
+            backgroundColor: "#42A5F5",
+            borderColor: "#42A5F5",
+            data: hoursWorked,
+          }]
+        };
+      } catch (err) {
+        handleError(err);
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const getCurrentWeekDates = (startDate) => {
+      const start = new Date(startDate);
+      const dates = [];
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + i);
+        dates.push(date.toISOString().split('T')[0]);
+      }
+      return dates;
+    };
+
+    const formatDateToLabel = (dateString) => {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('fr-FR', { 
+        weekday: 'short',
+        month: 'short', 
+        day: 'numeric'
+      }).format(date);
+    };
+
+    const handleError = (error) => {
+      console.error('Error:', error);
+      if (error.response) {
+        switch (error.response.status) {
+          case 401:
+            error.value = "Session expirée. Veuillez vous reconnecter.";
+            setTimeout(() => window.location.href = '/login', 2000);
+            break;
+          case 403:
+            error.value = "Accès non autorisé.";
+            break;
+          case 404:
+            error.value = "Données non trouvées pour cette période.";
+            break;
+          default:
+            error.value = "Erreur lors de la récupération des données.";
+        }
+      } else if (error.request) {
+        error.value = "Impossible de contacter le serveur.";
+      } else {
+        error.value = "Une erreur est survenue lors du chargement des données.";
+      }
+    };
+
+    onMounted(() => {
+      const today = new Date();
+      today.setDate(today.getDate() - today.getDay() + 1); // Set to Monday of current week
+      selectedStartDate.value = today.toISOString().split('T')[0];
+      
+      if (userId.value) {
+        fetchChartData();
+      }
+    });
+
+    return {
+      chartData,
+      chartOptions,
+      selectedStartDate,
+      fetchChartData,
+      loading,
+      error,
+      totalHours
+    };
+  }
+});
 </script>
-  
+
 <style scoped>
-    .date-picker {
-      margin-bottom: 20px;
-    }
-  
-    .chart-container {
-      width: 100%;
-      height: 400px;
-    }
-  
-    .total-hours {
-      margin-top: 20px;
-      font-size: 16px;
-    }
+.date-picker {
+  margin-bottom: 20px;
+}
+
+.chart-container {
+  width: 100%;
+  height: 400px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.total-hours {
+  margin-top: 20px;
+  font-size: 16px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
 </style>
-  
