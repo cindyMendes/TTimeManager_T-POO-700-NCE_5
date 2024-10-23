@@ -1,7 +1,13 @@
 import axios from 'axios'
 
+// Check if we're in production mode
+const isProd = import.meta.env.PROD;
+
+// Use environment variable in production, localhost in development
+const ENV_URL = isProd ? import.meta.env.VITE_API_URL : 'http://localhost:4000';
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:4000/api/',
+  baseURL: `${ENV_URL}/api`,
   headers: {
     'Content-Type': 'application/json'
   },

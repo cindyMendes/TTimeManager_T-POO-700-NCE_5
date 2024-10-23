@@ -37,6 +37,7 @@
               id="password"
               v-model="password"
               required
+              minlength="6"
               class="appearance-none rounded-md relative block w-full px-3 py-2 border border-bat-gray bg-bat-input text-bat-silver placeholder-bat-gray focus:outline-none focus:ring-bat-yellow focus:border-bat-yellow"
               placeholder="Entrez votre mot de passe"
             >
@@ -68,6 +69,13 @@
             {{ isLoading ? 'Inscription en cours...' : 'Rejoindre' }}
           </button>
         </div>
+
+        <!-- Error display -->
+        <div v-if="Object.keys(errors).length > 0" class="bg-red-900 text-bat-silver p-4 rounded-md">
+          <p v-for="(error, key) in errors" :key="key" class="text-sm">
+            {{ error }}
+          </p>
+        </div>
       </form>
       
       <p class="mt-2 text-center text-sm text-bat-silver">
@@ -89,46 +97,116 @@
 }
 </style>
   
-  <script>
-  export default {
-    name: 'Sign-up',
-    data() {
-      return {
-        username: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        errors: {},
-        isLoading: false
+<script>
+import api from '@/services/api_token';
+
+export default {
+  name: 'Sign-up',
+  data() {
+    return {
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      errors: {},
+      isLoading: false
+    }
+  },
+  methods: {
+    validateForm() {
+      const errors = {};
+      
+      if (this.password.length < 6) {
+        errors.password = "Le code d'accès doit contenir au moins 6 caractères.";
+      }
+      
+      if (this.password !== this.confirmPassword) {
+        errors.confirmPassword = "Les codes d'accès ne correspondent pas.";
+      }
+      
+      if (!this.email.includes('@')) {
+        errors.email = "Veuillez entrer une adresse email valide.";
+      }
+      
+      if (this.username.length < 3) {
+        errors.username = "Le nom de code doit contenir au moins 3 caractères.";
+      }
+      
+      return errors;
+    },
+
+    async handleSignup() {
+      this.errors = {};
+      this.isLoading = true;
+
+      // Form validation
+      const validationErrors = this.validateForm();
+      if (Object.keys(validationErrors).length > 0) {
+        this.errors = validationErrors;
+        this.isLoading = false;
+        return;
+      }
+      
+      try {
+        const response = await api.post('/auth/signup', {
+          user: {
+            username: this.username,
+            email: this.email,
+            password: this.password,
+            role: 'employee' // Default role for new users
+          }
+        });
+
+        console.log('Inscription réussie:', response.data);
+        
+        // Show success message
+        this.$router.push({
+          path: '/login',
+          query: { 
+            message: 'Inscription réussie! Vous pouvez maintenant vous connecter.' 
+          }
+        });
+      } catch (error) {
+        this.handleSignupError(error);
+      } finally {
+        this.isLoading = false;
       }
     },
-    methods: {
-      async handleSignup() {
-        this.errors = {};
-        this.isLoading = true;
-        
-        // Vérification des mots de passe
-        if (this.password !== this.confirmPassword) {
-          this.errors.confirmPassword = "Les codes d'accès ne correspondent pas.";
-          this.isLoading = false;
-          return;
+
+    handleSignupError(error) {
+      if (error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+
+        switch (status) {
+          case 422:
+            if (data.errors) {
+              this.errors = {
+                email: data.errors.email?.join(', '),
+                username: data.errors.username?.join(', '),
+                password: data.errors.password?.join(', ')
+              };
+            } else {
+              this.errors.general = "Données invalides. Veuillez vérifier vos informations.";
+            }
+            break;
+          case 409:
+            this.errors.email = "Cette adresse email est déjà utilisée.";
+            break;
+          case 500:
+            this.errors.general = "Une erreur serveur s'est produite. Veuillez réessayer plus tard.";
+            break;
+          default:
+            this.errors.general = "Une erreur s'est produite lors de l'inscription. Veuillez réessayer.";
         }
         
-        try {
-          // Simulons une attente pour l'API
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Logique d'inscription ici
-          console.log('Tentative d\'inscription avec:', this.username, this.email);
-          
-          // Redirection après inscription réussie
-          this.$router.push('/login');
-        } catch (error) {
-          this.errors = { general: "Échec de l'inscription. Veuillez réessayer." };
-        } finally {
-          this.isLoading = false;
-        }
+        console.error('Erreur d\'inscription:', error.response.data);
+      } else if (error.request) {
+        this.errors.general = "Impossible de contacter le serveur. Veuillez vérifier votre connexion.";
+      } else {
+        this.errors.general = "Une erreur inattendue s'est produite. Veuillez réessayer.";
       }
     }
   }
-  </script>
+}
+</script>

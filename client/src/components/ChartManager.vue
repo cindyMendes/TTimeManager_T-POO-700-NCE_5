@@ -32,9 +32,9 @@
 <script>
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import axios from 'axios';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
 import { Pie } from 'vue-chartjs'
+import api from '@/services/api_token';
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -94,13 +94,21 @@ export default {
       loading.value = true;
       errorMessage.value = null;
       try {
-        const response = await axios.get(`http://localhost:4000/api/workingtimes/${userId.value}`);
+        const response = await api.get(`/workingtimes/${userId.value}`);
         console.log("API response:", response.data);
         workingTimes.value = response.data.data;
         processChartData();
       } catch (error) {
         console.error("Error details:", error.response || error);
-        errorMessage.value = "Error accessing Bat-Computer. Try again.";
+        if (error.response?.status === 401) {
+          errorMessage.value = "Session expirée. Veuillez vous reconnecter.";
+          // Optionally redirect to login
+          // window.location.href = '/login';
+        } else if (error.response?.status === 403) {
+          errorMessage.value = "Accès non autorisé.";
+        } else {
+          errorMessage.value = "Erreur d'accès au Bat-Ordinateur. Veuillez réessayer.";
+        }
       } finally {
         loading.value = false;
       }
