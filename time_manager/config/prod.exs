@@ -58,3 +58,11 @@ config :phoenix, :plug_init_mode, :runtime
 
 # Set a higher stacktrace during development
 config :phoenix, :stacktrace_depth, 20
+
+config :cors_plug,
+  origin: [
+    "http://localhost:5173",
+    "https://time-manager-frontend-ac9007c3e870.herokuapp.com"
+  ],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  headers: ["Authorization", "Content-Type", "Accept", "Origin", "User-Agent", "DNT", "Cache-Control", "X-Mx-ReqToken", "Keep-Alive", "X-Requested-With", "If-Modified-Since", "X-CSRF-Token"]
