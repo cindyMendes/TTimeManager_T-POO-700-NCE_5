@@ -1,33 +1,35 @@
-# Base Elixir image
 FROM elixir:1.14-alpine
 
 # Install build dependencies
-RUN apk add --no-cache build-base git postgresql-client
+RUN apk add --no-cache build-base git postgresql-client npm
 
-# Set environment variables
-ENV MIX_ENV=prod
+# Install hex and rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
 
-# Set the working directory to /app
 WORKDIR /app
 
-# Copy the mix.exs and mix.lock files to install dependencies
+# Copy the mix files
 COPY mix.exs mix.lock ./
+
+# Set build ENV
+ENV MIX_ENV=dev
+
+# Install dependencies
+RUN mix deps.get
 
 # Copy the rest of the application code
 COPY . .
 
-# Install Elixir dependencies
-RUN mix do local.hex --force, local.rebar --force
-RUN mix deps.get --only prod
+# Make init script executable
+RUN chmod +x ./init.sh
 
-# Compile the application for production
-RUN mix compile
-
-# Copy the init script
-COPY init.sh ./init.sh
-
-# Expose the Phoenix port
+# Expose port
 EXPOSE 4000
 
-# Command to run the init script
-CMD ["sh", "./init.sh"]
+# Set runtime ENV
+ENV LANG=C.UTF-8
+ENV PHX_SERVER=true
+
+# Start the application
+CMD ["./init.sh"]
