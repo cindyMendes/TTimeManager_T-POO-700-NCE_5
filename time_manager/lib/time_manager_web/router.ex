@@ -67,9 +67,9 @@ end
 
        # Working Time routes
        get("/workingtimes", WorkingTimeController, :index)
-       get("/workingtimes/:user_id/times", WorkingTimeController, :show_user)
-       get("/workingtimes/:user_id", WorkingTimeController, :show_user_working_time)
-       get("/workingtime/:id", WorkingTimeController, :show)
+       get("/workingtimes/:user_id/times", WorkingTimeController, :show_user_working_time) #recherche par user id
+       get("/workingtimes/:id", WorkingTimeController, :show) #recherche avec l'id du working time
+       get("/workingtime/:id", WorkingTimeController, :show) #recherche avec l'id du working time encore lol
        post("/workingtime/:user_id", WorkingTimeController, :create)
        put("/workingtime/:id", WorkingTimeController, :update)
        delete("/workingtime/:id", WorkingTimeController, :delete)
