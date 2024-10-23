@@ -34,10 +34,7 @@ config :time_manager, TimeManagerWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  watchers: [
-    esbuild: {Esbuild, :install_and_run, [:time_manager, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:time_manager, ~w(--watch)]}
-  ]
+  watchers: []
 
 # Print current database configuration
 if Mix.env() == :dev do
