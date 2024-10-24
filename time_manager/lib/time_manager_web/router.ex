@@ -97,6 +97,8 @@ end
     pipe_through([:api, :auth, :ensure_auth, :general_manager_auth])
 
     # Routes for general manager only
+    get "/users/non_general_managers", UserController, :non_general_managers
+
     get("/users", UserController, :index)
     delete("/users/:id", UserController, :delete_user)
 
@@ -120,5 +122,8 @@ end
     # Promote and demote routes
     put "/users/:id/promote", UserController, :promote
     put "/users/:id/demote", UserController, :demote
+
+    # List employees and managers
+    get "/management/users", ManagementController, :list_non_general_managers
   end
 end
