@@ -72,11 +72,27 @@ defmodule TimeManagerWeb.TeamController do
 
   # Updated add_user_to_team function with proper error handling
   def add_user_to_team(conn, %{"team_id" => team_id, "user_id" => user_id}) do
+    IO.inspect(%{team_id: team_id, user_id: user_id}, label: "Received Parameters")
+
+    # Get and inspect user and team
     user = Accounts.get_user!(user_id)
     team = Teams.get_team!(team_id)
 
-    case Accounts.update_user(user, %{team_id: team_id}) do
+    IO.inspect(user, label: "User to update")
+    IO.inspect(team, label: "Target team")
+
+    # Create update params and validate team exists
+    update_params = %{
+      "team_id" => team_id,
+      "role" => user.role  # Preserve existing role
+    }
+
+    IO.inspect(update_params, label: "Update Parameters")
+
+    # Attempt to update with more detailed error handling
+    case Accounts.update_user(user, update_params) do
       {:ok, updated_user} ->
+        IO.inspect(updated_user, label: "Successfully Updated User")
         conn
         |> put_status(:ok)
         |> json(%{
@@ -94,17 +110,47 @@ defmodule TimeManagerWeb.TeamController do
           }
         })
 
-      {:error, changeset} ->
+      {:error, %Ecto.Changeset{} = changeset} ->
+        IO.inspect(changeset.errors, label: "Validation Errors")
+        IO.inspect(changeset.valid?, label: "Changeset Valid?")
+        IO.inspect(changeset.changes, label: "Attempted Changes")
+
+        error_messages = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+          Enum.reduce(opts, msg, fn {key, value}, acc ->
+            String.replace(acc, "%{#{key}}", to_string(value))
+          end)
+        end)
+
+        IO.inspect(error_messages, label: "Formatted Error Messages")
+
         conn
         |> put_status(:unprocessable_entity)
         |> json(%{
-          errors: Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-            Enum.reduce(opts, msg, fn {key, value}, acc ->
-              String.replace(acc, "%{#{key}}", to_string(value))
-            end)
-          end)
+          errors: error_messages,
+          details: "Failed to add user to team. Please check the error messages."
+        })
+
+      {:error, other_error} ->
+        IO.inspect(other_error, label: "Unexpected Error")
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{
+          errors: ["An unexpected error occurred while updating the user"],
+          details: inspect(other_error)
         })
     end
+  rescue
+    e in Ecto.NoResultsError ->
+      IO.inspect(e, label: "Not Found Error")
+      conn
+      |> put_status(:not_found)
+      |> json(%{errors: ["User or team not found"]})
+
+    e in _ ->
+      IO.inspect(e, label: "Unexpected Exception")
+      conn
+      |> put_status(:internal_server_error)
+      |> json(%{errors: ["An unexpected error occurred"]})
   end
 
   # Updated remove_member function with proper error handling
