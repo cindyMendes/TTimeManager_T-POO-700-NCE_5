@@ -22,8 +22,6 @@ RUN mix deps.get
 # Copy the rest of the application code
 COPY . .
 
-# Copy the seed file
-COPY priv/repo/seeds.exs priv/repo/seeds.exs
 
 # Make init script executable
 RUN chmod +x ./init.sh
