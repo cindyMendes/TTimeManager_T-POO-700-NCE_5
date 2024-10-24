@@ -1,5 +1,35 @@
 {
   "appId": "com.timemanager.app",
   "appName": "Gotham Time Manager",
-  "webDir": "dist"
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://time-manager-frontend-ac9007c3e870.herokuapp.com",
+    "cleartext": true,
+    "androidScheme": "http"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "showSpinner": true,
+      "androidSpinnerStyle": "large"
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#488AFF"
+    },
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  },
+  "ios": {
+    "contentInset": "always",
+    "cordovaSwiftVersion": "5.0",
+    "minVersion": "13.0"
+  }
 }

@@ -23,6 +23,7 @@ import EmployeeDashboard from '@/views/Dashboards/EmployeeDashboard.vue';
 import ManagerDashboard from '@/views/Dashboards/ManagerDashboard.vue';
 import GeneralManagerDashboard from '@/views/Dashboards/GeneralManagerDashboard.vue';
 import AdminDashboard from '@/views/Dashboards/AdminDashboard.vue';
+import { checkAuthentication } from '@/router/auth';
 
 const router = useRouter();
 const isLoading = ref(true);
@@ -64,17 +65,5 @@ onMounted(async () => {
   }
 });
 
-const checkAuthentication = () => {
-  // Simuler un appel API pour vérifier l'authentification
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Simuler un utilisateur connecté avec un rôle
-      resolve({
-        isAuthenticated: true,
-        role: 'employee', // Changez ceci pour tester différents rôles
-        userId: '123' // ID de l'utilisateur connecté
-      });
-    }, 1000);
-  });
-};
+
 </script>
