@@ -58,11 +58,56 @@ defmodule TimeManagerWeb.TeamController do
   end
 
   def delete(conn, %{"id" => id}) do
-    team = Teams.get_team!(id)
+    IO.inspect(id, label: "Attempting to delete team")
 
-    with {:ok, %Team{}} <- Teams.delete_team(team) do
-      send_resp(conn, :no_content, "")
+    # First check if team exists and get its members
+    team = Teams.get_team_with_members!(id)
+
+    # Check if team has members
+    if length(team.members) > 0 do
+      IO.inspect(team.members, label: "Team still has members")
+      conn
+      |> put_status(:unprocessable_entity)
+      |> json(%{
+        errors: ["Cannot delete team with existing members. Please remove all members first."]
+      })
+    else
+      case Teams.delete_team(team) do
+        {:ok, _deleted_team} ->
+          conn
+          |> put_status(:ok)
+          |> json(%{
+            data: %{
+              message: "Team successfully deleted",
+              id: id
+            }
+          })
+
+        {:error, changeset} ->
+          IO.inspect(changeset, label: "Delete team error")
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{
+            errors: Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+              Enum.reduce(opts, msg, fn {key, value}, acc ->
+                String.replace(acc, "%{#{key}}", to_string(value))
+              end)
+            end)
+          })
+      end
     end
+  rescue
+    e in Ecto.NoResultsError ->
+      IO.inspect(e, label: "Team not found")
+      conn
+      |> put_status(:not_found)
+      |> json(%{errors: ["Team not found"]})
+
+    e in _ ->
+      IO.inspect(e, label: "Unexpected error during team deletion")
+      conn
+      |> put_status(:internal_server_error)
+      |> json(%{errors: ["An unexpected error occurred while deleting the team"]})
   end
 
   def show(conn, %{"id" => id}) do
@@ -154,39 +199,73 @@ defmodule TimeManagerWeb.TeamController do
       |> json(%{errors: ["An unexpected error occurred"]})
   end
 
-  # Updated remove_member function with proper error handling
   def remove_member(conn, %{"id" => team_id, "user_id" => user_id}) do
+    IO.inspect(%{team_id: team_id, user_id: user_id}, label: "Remove member parameters")
+
+    # Get user and team
     user = Accounts.get_user!(user_id)
+    team = Teams.get_team!(team_id)
 
-    case Accounts.update_user(user, %{team_id: nil}) do
-      {:ok, updated_user} ->
-        conn
-        |> put_status(:ok)
-        |> json(%{
-          data: %{
-            message: "Member successfully removed from the team",
-            user: %{
-              id: updated_user.id,
-              username: updated_user.username,
-              email: updated_user.email,
-              role: updated_user.role,
-              team_id: updated_user.team_id,
-              inserted_at: updated_user.inserted_at,
-              updated_at: updated_user.updated_at
+    # Verify user belongs to this team
+    if user.team_id != team.id do
+      conn
+      |> put_status(:unprocessable_entity)
+      |> json(%{errors: ["User is not a member of this team"]})
+    else
+      # Create update params while preserving required fields
+      update_params = %{
+        "team_id" => nil,
+        "username" => user.username,
+        "email" => user.email,
+        "role" => user.role
+      }
+
+      IO.inspect(update_params, label: "Remove member update params")
+
+      case Accounts.update_user(user, update_params) do
+        {:ok, updated_user} ->
+          IO.inspect(updated_user, label: "Successfully removed member")
+          conn
+          |> put_status(:ok)
+          |> json(%{
+            data: %{
+              message: "Member successfully removed from the team",
+              user: %{
+                id: updated_user.id,
+                username: updated_user.username,
+                email: updated_user.email,
+                role: updated_user.role,
+                team_id: updated_user.team_id,
+                inserted_at: updated_user.inserted_at,
+                updated_at: updated_user.updated_at
+              }
             }
-          }
-        })
+          })
 
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{
-          errors: Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-            Enum.reduce(opts, msg, fn {key, value}, acc ->
-              String.replace(acc, "%{#{key}}", to_string(value))
+        {:error, changeset} ->
+          IO.inspect(changeset, label: "Remove member error")
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{
+            errors: Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+              Enum.reduce(opts, msg, fn {key, value}, acc ->
+                String.replace(acc, "%{#{key}}", to_string(value))
+              end)
             end)
-          end)
-        })
+          })
+      end
     end
+  rescue
+    e in Ecto.NoResultsError ->
+      IO.inspect(e, label: "User or team not found")
+      conn
+      |> put_status(:not_found)
+      |> json(%{errors: ["User or team not found"]})
+
+    e in _ ->
+      IO.inspect(e, label: "Unexpected error during member removal")
+      conn
+      |> put_status(:internal_server_error)
+      |> json(%{errors: ["An unexpected error occurred while removing the member"]})
   end
 end
