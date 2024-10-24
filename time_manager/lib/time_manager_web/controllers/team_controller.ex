@@ -70,7 +70,6 @@ defmodule TimeManagerWeb.TeamController do
     render(conn, "show_with_members.json", team: team)
   end
 
-  # Updated add_user_to_team function with proper error handling
   def add_user_to_team(conn, %{"team_id" => team_id, "user_id" => user_id}) do
     IO.inspect(%{team_id: team_id, user_id: user_id}, label: "Received Parameters")
 
@@ -81,10 +80,12 @@ defmodule TimeManagerWeb.TeamController do
     IO.inspect(user, label: "User to update")
     IO.inspect(team, label: "Target team")
 
-    # Create update params and validate team exists
+    # Create update params while preserving all required user data
     update_params = %{
       "team_id" => team_id,
-      "role" => user.role  # Preserve existing role
+      "username" => user.username,
+      "email" => user.email,
+      "role" => user.role
     }
 
     IO.inspect(update_params, label: "Update Parameters")
