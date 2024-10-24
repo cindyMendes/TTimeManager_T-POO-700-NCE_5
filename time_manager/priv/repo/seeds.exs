@@ -21,9 +21,9 @@ case Repo.get_by(User, email: "batman@gotham.com") do
 
     %User{}
     |> User.changeset(%{
-      username: "batman",
-      email: "batman@gotham.com",
-      password: "batman",
+      username: "batadmin",
+      email: "batadmin@gotham.com",
+      password: "batadmin",
       role: "general_manager"
     })
     |> Repo.insert!()
