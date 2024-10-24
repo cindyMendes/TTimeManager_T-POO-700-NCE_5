@@ -1,3 +1,5 @@
+Updated Team Controller
+
 defmodule TimeManagerWeb.TeamController do
   use TimeManagerWeb, :controller
 
@@ -5,11 +7,7 @@ defmodule TimeManagerWeb.TeamController do
   alias TimeManager.Teams.Team
   alias TimeManager.Accounts
 
-  # GET /teams - Lister toutes les équipes
-  # def index(conn, _params) do
-  #   teams = Teams.list_teams()
-  #   render(conn, "index.json", teams: teams)
-  # end
+  # Existing index function remains the same
   def index(conn, _params) do
     teams = Teams.list_teams()
 
@@ -45,17 +43,6 @@ defmodule TimeManagerWeb.TeamController do
     })
   end
 
-
-
-
-
-  # GET /teams/:id - Récupérer une équipe spécifique
-  # def show(conn, %{"id" => id}) do
-  #   team = Teams.get_team!(id)
-  #   render(conn, "show.json", team: team)
-  # end
-
-  # POST /teams - Créer une nouvelle équipe
   def create(conn, %{"team" => team_params}) do
     with {:ok, %Team{} = team} <- Teams.create_team(team_params) do
       conn
@@ -64,7 +51,6 @@ defmodule TimeManagerWeb.TeamController do
     end
   end
 
-  # PUT /teams/:id - Mettre à jour une équipe
   def update(conn, %{"id" => id, "team" => team_params}) do
     team = Teams.get_team!(id)
 
@@ -73,7 +59,6 @@ defmodule TimeManagerWeb.TeamController do
     end
   end
 
-  # DELETE /teams/:id - Supprimer une équipe
   def delete(conn, %{"id" => id}) do
     team = Teams.get_team!(id)
 
@@ -82,40 +67,81 @@ defmodule TimeManagerWeb.TeamController do
     end
   end
 
-   # GET /teams/:id - Récupérer une équipe spécifique avec ses membres
-   def show(conn, %{"id" => id}) do
+  def show(conn, %{"id" => id}) do
     team = Teams.get_team_with_members!(id)
     render(conn, "show_with_members.json", team: team)
   end
 
-    # PUT /teams/:team_id/users/:user_id - Ajouter un utilisateur à une équipe
-def add_user_to_team(conn, %{"team_id" => team_id, "user_id" => user_id}) do
-  user = Accounts.get_user!(user_id)
+  # Updated add_user_to_team function with proper error handling
+  def add_user_to_team(conn, %{"team_id" => team_id, "user_id" => user_id}) do
+    user = Accounts.get_user!(user_id)
+    team = Teams.get_team!(team_id)
 
-  case Accounts.update_user(user, %{team_id: team_id}) do
-    {:ok, user} ->
-      json(conn, %{message: "User successfully added to team", user: user})
-    {:error, changeset} ->
-      conn
-      |> put_status(:unprocessable_entity)
-      |> json(%{errors: changeset})
+    case Accounts.update_user(user, %{team_id: team_id}) do
+      {:ok, updated_user} ->
+        conn
+        |> put_status(:ok)
+        |> json(%{
+          data: %{
+            message: "User successfully added to team",
+            user: %{
+              id: updated_user.id,
+              username: updated_user.username,
+              email: updated_user.email,
+              role: updated_user.role,
+              team_id: updated_user.team_id,
+              inserted_at: updated_user.inserted_at,
+              updated_at: updated_user.updated_at
+            }
+          }
+        })
+
+      {:error, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{
+          errors: Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+            Enum.reduce(opts, msg, fn {key, value}, acc ->
+              String.replace(acc, "%{#{key}}", to_string(value))
+            end)
+          end)
+        })
+    end
   end
-end
 
- # Action pour supprimer un membre d'une équipe
- def remove_member(conn, %{"id" => team_id, "user_id" => user_id}) do
-  user = Accounts.get_user!(user_id)
+  # Updated remove_member function with proper error handling
+  def remove_member(conn, %{"id" => team_id, "user_id" => user_id}) do
+    user = Accounts.get_user!(user_id)
 
-  case Accounts.update_user(user, %{team_id: nil}) do
-    {:ok, _user} ->
-      json(conn, %{message: "Member successfully removed from the team"})
-    {:error, changeset} ->
-      conn
-      |> put_status(:unprocessable_entity)
-      |> json(%{errors: changeset})
+    case Accounts.update_user(user, %{team_id: nil}) do
+      {:ok, updated_user} ->
+        conn
+        |> put_status(:ok)
+        |> json(%{
+          data: %{
+            message: "Member successfully removed from the team",
+            user: %{
+              id: updated_user.id,
+              username: updated_user.username,
+              email: updated_user.email,
+              role: updated_user.role,
+              team_id: updated_user.team_id,
+              inserted_at: updated_user.inserted_at,
+              updated_at: updated_user.updated_at
+            }
+          }
+        })
+
+      {:error, changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{
+          errors: Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+            Enum.reduce(opts, msg, fn {key, value}, acc ->
+              String.replace(acc, "%{#{key}}", to_string(value))
+            end)
+          end)
+        })
+    end
   end
-end
-
-
-
 end
