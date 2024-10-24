@@ -1,16 +1,3 @@
-# Script for populating the database. You can run it as:
-#
-#     mix run priv/repo/seeds.exs
-#
-# Inside the script, you can read and write to any of your
-# repositories directly:
-#
-#     TimeManager.Repo.insert!(%TimeManager.SomeSchema{})
-#
-# We recommend using the bang functions (`insert!`, `update!`
-# and so on) as they will fail if something goes wrong.
-# In priv/repo/seeds.exs
-
 alias TimeManager.Accounts
 alias TimeManager.Repo
 
@@ -18,20 +5,33 @@ require Logger
 
 Logger.info("Starting database seeding...")
 
-# Create general manager if not exists
-case Accounts.get_user_by_email("batadmin@gotham.com") do
+# Try to find the user first using get_user_by_email_and_username
+# Since we need both email and username, we'll pass both
+case Accounts.get_user_by_email_and_username("batadmin@gotham.com", "batadmin") do
   nil ->
     Logger.info("Creating general manager user...")
-    {:ok, _user} = Accounts.create_user(%{
+
+    # Create user with proper attributes
+    user_params = %{
       username: "batadmin",
       email: "batadmin@gotham.com",
       password: "batadmin",
       role: "general_manager"
-    })
-    Logger.info("General manager created successfully")
+    }
 
-  _user ->
-    Logger.info("General manager already exists")
+    case Accounts.create_user(user_params) do
+      {:ok, user} ->
+        Logger.info("General manager created successfully with id: #{user.id}")
+
+      {:error, changeset} ->
+        Logger.error("Failed to create general manager")
+        Logger.error("Errors: #{inspect(changeset.errors)}")
+    end
+
+  user ->
+    Logger.info("General manager already exists with id: #{user.id}")
 end
+
+# You might want to create some other seed data here
 
 Logger.info("Database seeding completed")
