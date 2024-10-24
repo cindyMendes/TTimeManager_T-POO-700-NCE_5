@@ -22,17 +22,17 @@ if config_env() == :prod do
       """
 
   # Add CORS configuration
-  config :cors_plug,
-    origin: String.split(System.get_env("CORS_ORIGINS") || "http://localhost:5173,https://time-manager-frontend-ac9007c3e870.herokuapp.com", ","),
+# Change this section in runtime.exs
+config :cors_plug,
+  origin: ["*"],  # This allows all origins
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  headers: ["Authorization", "Content-Type", "Accept", "Origin", "User-Agent", "DNT", "Cache-Control", "X-Mx-ReqToken", "Keep-Alive", "X-Requested-With", "If-Modified-Since", "X-CSRF-Token"]
+
+config :time_manager, TimeManagerWeb.Endpoint,
+  # ... other configs ...
+  cors_plug_opts: [
+    origin: ["*"],  # This allows all origins
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     headers: ["Authorization", "Content-Type", "Accept", "Origin", "User-Agent", "DNT", "Cache-Control", "X-Mx-ReqToken", "Keep-Alive", "X-Requested-With", "If-Modified-Since", "X-CSRF-Token"]
-
-  config :time_manager, TimeManagerWeb.Endpoint,
-    secret_key_base: secret_key_base,
-    # Add CORS configuration to endpoint as well
-    cors_plug_opts: [
-      origin: String.split(System.get_env("CORS_ORIGINS") || "http://localhost:5173,https://time-manager-frontend-ac9007c3e870.herokuapp.com", ","),
-      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      headers: ["Authorization", "Content-Type", "Accept", "Origin", "User-Agent", "DNT", "Cache-Control", "X-Mx-ReqToken", "Keep-Alive", "X-Requested-With", "If-Modified-Since", "X-CSRF-Token"]
-    ]
+  ]
 end
