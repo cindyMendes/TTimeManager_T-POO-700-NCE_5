@@ -1,6 +1,7 @@
 defmodule TimeManager.TimeTracking.Clock do
   use Ecto.Schema
   import Ecto.Changeset
+  alias TimeManager.Validators.InputSanitizer
 
   schema "clocks" do
     field :status, :boolean, default: false
@@ -12,10 +13,35 @@ defmodule TimeManager.TimeTracking.Clock do
 
   @doc false
   def changeset(clock, attrs) do
-    IO.inspect(attrs, label: "Attrs in Changeset")  # Add this line to log attrs
+    # Sanitize inputs before casting
+    sanitized_attrs = %{
+      time: attrs |> get_attr(:time) |> InputSanitizer.sanitize_datetime(),
+      status: attrs |> get_attr(:status) |> InputSanitizer.sanitize_boolean(),
+      user_id: attrs |> get_attr(:user_id) |> InputSanitizer.sanitize_user_id()
+    }
+
     clock
-    |> cast(attrs, [:time, :status, :user_id])  # Ensure user_id is here
+    |> cast(sanitized_attrs, [:time, :status, :user_id])
     |> validate_required([:time, :status, :user_id])
-    |> IO.inspect(label: "Changeset after cast")
+    |> foreign_key_constraint(:user_id)
+    |> validate_time_not_future()
+  end
+
+  # Helper to safely get attributes from either string or atom keys
+  defp get_attr(attrs, key) do
+    attrs[key] || attrs[Atom.to_string(key)]
+  end
+
+  # Validate that clock time is not in the future
+  defp validate_time_not_future(changeset) do
+    case get_change(changeset, :time) do
+      nil -> changeset
+      time ->
+        if DateTime.compare(time, DateTime.utc_now()) == :gt do
+          add_error(changeset, :time, "cannot be in the future")
+        else
+          changeset
+        end
+    end
   end
 end
