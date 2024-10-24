@@ -1,5 +1,3 @@
-Updated Team Controller
-
 defmodule TimeManagerWeb.TeamController do
   use TimeManagerWeb, :controller
 
