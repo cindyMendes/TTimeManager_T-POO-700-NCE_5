@@ -24,16 +24,19 @@
         <p v-else class="text-bat-silver">Aucun membre trouvé pour cette équipe.</p>
 
         <div class="mt-4">
-          <h5 class="font-semibold text-bat-yellow">Ajouter un membre</h5>
-          <input
+          <h5 class="font-semibold text-bat-yellow">Ajouter un membre :</h5>
+          <select
             v-model="newMemberId[team.id]"
-            placeholder="ID Utilisateur"
-            type="number"
-            class="border p-2 rounded w-full mb-2 bg-bat-black text-bat-silver placeholder-bat-silver focus:outline-none focus:ring-bat-yellow focus:border-bat-yellow"
-          />
+            class="border p-2 rounded w-full mb-2 bg-bat-black text-bat-silver focus:outline-none focus:ring-bat-yellow focus:border-bat-yellow"
+          >
+            <option value="">Sélectionner un utilisateur</option>
+            <option v-for="employee in employees" :key="employee.id" :value="employee.id">
+              {{ employee.username }}
+            </option>
+          </select>
           <div class="flex justify-center space-x-4">
             <button
-              @click="addUserToTeam(team.id)"
+              @click="addEmployeeToTeam(team.id)"
               class="bg-bat-yellow text-bat-black p-2 rounded hover:bg-bat-yellow-light"
               :disabled="isLoading"
             >
@@ -68,13 +71,17 @@
         </div>
 
         <div class="mb-4">
-          <label class="block mb-2 text-bat-yellow">Manager ID :</label>
-          <input
+          <label class="block mb-2 text-bat-yellow">Manager :</label>
+          <select
             v-model="newTeam.manager_id"
-            type="number"
-            class="border p-2 rounded w-full bg-bat-black text-bat-silver placeholder-bat-silver focus:outline-none focus:ring-bat-yellow focus:border-bat-yellow"
+            class="border p-2 rounded w-full bg-bat-black text-bat-silver focus:outline-none focus:ring-bat-yellow focus:border-bat-yellow"
             required
-          />
+          >
+            <option value="">Sélectionner un manager</option>
+            <option v-for="manager in managers" :key="manager.id" :value="manager.id">
+              {{ manager.username }}
+            </option>
+          </select>
         </div>
 
         <button
@@ -97,6 +104,8 @@ export default {
   data() {
     return {
       teams: [],
+      employees: [], // for team members
+      managers: [], // for team managers
       newTeam: {
         name: "",
         manager_id: "",
@@ -107,11 +116,34 @@ export default {
     };
   },
 
-  mounted() {
-    this.fetchTeams();
+  async mounted() {
+    await Promise.all([
+      this.getAllManagers(),
+      this.getAllEmployees(),
+      this.fetchTeams()
+    ]);
   },
 
   methods: {
+    async getAllManagers() {
+      try {
+        const response = await api.get('/management/managers');
+        this.managers = response.data.users;
+        console.log('Managers:', this.managers);
+      } catch (error) {
+        this.handleError(error, 'la récupération des managers');
+      }
+    },
+
+    async getAllEmployees() {
+      try {
+        const response = await api.get('/management/employees');
+        this.employees = response.data.users;
+      } catch (error) {
+        this.handleError(error, "lors de la récupération des employees");
+      }
+    },
+
     async fetchTeams() {
       this.isLoading = true;
       this.error = null;
@@ -126,6 +158,11 @@ export default {
     },
 
     async createTeam() {
+      if (!this.newTeam.manager_id) {
+        this.error = "Veuillez sélectionner un manager";
+        return;
+      }
+
       this.isLoading = true;
       this.error = null;
       try {
@@ -140,10 +177,10 @@ export default {
       }
     },
 
-    async addUserToTeam(teamId) {
+    async addEmployeeToTeam(teamId) {
       const userId = this.newMemberId[teamId];
       if (!userId) {
-        this.error = "Veuillez entrer un ID utilisateur";
+        this.error = "Veuillez sélectionner un utilisateur";
         return;
       }
 
@@ -222,7 +259,6 @@ export default {
         this.error = `Une erreur inattendue est survenue ${context}.`;
       }
 
-      // Clear error after 5 seconds
       setTimeout(() => {
         this.error = null;
       }, 5000);

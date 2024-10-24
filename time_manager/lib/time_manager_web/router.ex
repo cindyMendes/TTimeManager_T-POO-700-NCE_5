@@ -125,5 +125,11 @@ end
 
     # List employees and managers
     get "/management/users", ManagementController, :list_non_general_managers
+
+    # List managers
+    get "/management/managers", ManagementController, :list_managers
+
+    # List employees
+    get "/management/employees", ManagementController, :list_employees
   end
 end
