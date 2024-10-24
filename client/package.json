@@ -11,7 +11,11 @@
     "test:e2e:dev": "start-server-and-test 'vite dev --port 4173' http://localhost:5173 'cypress open --e2e'",
     "test:unit": "cypress run --component",
     "test:unit:dev": "cypress open --component",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
+    "build:mobile": "vite build && npx cap sync",
+    "dev:android": "cp capacitor.config.dev.json capacitor.config.json && npm run build:mobile && npx cap run android",
+    "build:android": "cp capacitor.config.prod.json capacitor.config.json && npm run build:mobile && npx cap build android",
+    "open:android": "npx cap open android"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.2",
