@@ -9,27 +9,29 @@
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
+# In priv/repo/seeds.exs
 
-alias TimeManager.Accounts.User
+alias TimeManager.Accounts
 alias TimeManager.Repo
 
-IO.puts "Checking for general manager user..."
+require Logger
 
-case Repo.get_by(User, email: "batman@gotham.com") do
+Logger.info("Starting database seeding...")
+
+# Create general manager if not exists
+case Accounts.get_user_by_email("batadmin@gotham.com") do
   nil ->
-    IO.puts "Creating general manager user..."
-
-    %User{}
-    |> User.changeset(%{
+    Logger.info("Creating general manager user...")
+    {:ok, _user} = Accounts.create_user(%{
       username: "batadmin",
       email: "batadmin@gotham.com",
       password: "batadmin",
       role: "general_manager"
     })
-    |> Repo.insert!()
+    Logger.info("General manager created successfully")
 
-    IO.puts "General manager user created successfully!"
-
-  user ->
-    IO.puts "General manager user already exists: #{user.username}"
+  _user ->
+    Logger.info("General manager already exists")
 end
+
+Logger.info("Database seeding completed")

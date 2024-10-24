@@ -20,6 +20,11 @@ echo "Database Host: $DB_HOST"
 echo "Database Name: $DB_NAME"
 echo "Port: $PORT"
 
+# Force production environment
+export MIX_ENV=prod
+echo "Forced MIX_ENV to: $MIX_ENV"
+echo "Environment: $MIX_ENV"
+
 # Install dependencies
 mix local.hex --force
 mix local.rebar --force
