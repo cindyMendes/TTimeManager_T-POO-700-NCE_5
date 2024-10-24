@@ -43,34 +43,60 @@
       {{ error }}
     </div>
 
-    <div v-if="apiResponse" class="mt-4">
-      <h3 id="api-response-title" class="text-xl font-bold mb-2 text-bat-yellow">Détails de la réponse API :</h3>
-      <div class="overflow-x-auto">
-        <table aria-labelledby="api-response-title" class="min-w-full bg-bat-black border border-bat-gray rounded-lg overflow-hidden">
-          <caption class="sr-only">Détails de la dernière patrouille</caption>
-          <thead>
-            <tr class="bg-bat-yellow text-bat-black">
-              <th scope="col" class="py-2 px-4 border-b border-bat-gray">Statut</th>
-              <th scope="col" class="py-2 px-4 border-b border-bat-gray">Heure de début</th>
-              <th scope="col" class="py-2 px-4 border-b border-bat-gray">Heure de fin</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="py-2 px-4 border-b border-bat-gray">
-                {{ isClockedIn ? 'En cours' : (endTime ? 'Terminée' : 'Non commencée') }}
-              </td>
-              <td class="py-2 px-4 border-b border-bat-gray">
-                {{ startTime || 'Non définie' }}
-              </td>
-              <td class="py-2 px-4 border-b border-bat-gray">
-                {{ endTime || 'Non définie' }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <div v-if="apiResponse" class="mt-6">
+  <h3 id="api-response-title" class="text-2xl font-bold mb-4 text-bat-yellow flex items-center">
+    <span class="mr-2">🦇</span> État de la Patrouille
+  </h3>
+  
+  <div class="overflow-hidden rounded-lg shadow-lg bg-gradient-to-b from-bat-black to-bat-gray border border-bat-yellow/20">
+    <div class="overflow-x-auto">
+      <table aria-labelledby="api-response-title" class="min-w-full divide-y divide-bat-gray/30">
+        <caption class="sr-only">Détails de la dernière patrouille</caption>
+        <thead>
+          <tr>
+            <th scope="col" class="px-6 py-4 bg-bat-yellow/10 text-bat-yellow font-bold text-left">
+              Statut
+            </th>
+            <th scope="col" class="px-6 py-4 bg-bat-yellow/10 text-bat-yellow font-bold text-left">
+              Début de Mission
+            </th>
+            <th scope="col" class="px-6 py-4 bg-bat-yellow/10 text-bat-yellow font-bold text-left">
+              Fin de Mission
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-bat-gray/30">
+          <tr class="transition-colors hover:bg-bat-yellow/5">
+            <td class="px-6 py-4">
+              <span :class="{
+                'px-3 py-1 rounded-full text-sm font-medium': true,
+                'bg-green-900/30 text-green-400': isClockedIn,
+                'bg-yellow-900/30 text-yellow-400': !isClockedIn && endTime,
+                'bg-red-900/30 text-red-400': !isClockedIn && !endTime
+              }">
+                {{ isClockedIn ? '🟢 En cours' : (endTime ? '🟡 Terminée' : '🔴 Non commencée') }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-bat-silver">
+              <span v-if="startTime" class="flex items-center">
+                <span class="mr-2">🕒</span>
+                {{ startTime }}
+              </span>
+              <span v-else class="text-bat-gray">Non définie</span>
+            </td>
+            <td class="px-6 py-4 text-bat-silver">
+              <span v-if="endTime" class="flex items-center">
+                <span class="mr-2">🏁</span>
+                {{ endTime }}
+              </span>
+              <span v-else class="text-bat-gray">Non définie</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+  </div>
+</div>
   </div>
 </template>
 
