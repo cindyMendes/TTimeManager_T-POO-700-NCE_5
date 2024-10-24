@@ -27,7 +27,11 @@ mix deps.get --only prod
 mix compile
 
 # Database operations
+echo "Running migrations..."
 mix ecto.migrate
+
+echo "Populating database..."
+mix run priv/repo/seeds.exs
 
 # Start the Phoenix server
 mix phx.server
