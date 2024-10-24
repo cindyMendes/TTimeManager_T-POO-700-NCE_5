@@ -13,7 +13,7 @@ WORKDIR /app
 COPY mix.exs mix.lock ./
 
 # Set build ENV
-ENV MIX_ENV=dev
+ENV MIX_ENV=prod
 
 # Install dependencies
 RUN mix deps.get
