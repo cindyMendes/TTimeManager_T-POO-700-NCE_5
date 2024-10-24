@@ -60,9 +60,9 @@ defmodule TimeManager.Accounts do
     IO.inspect(changeset, label: "User Changeset")
 
     case Repo.insert(changeset) do
-      {:ok, user} -> 
+      {:ok, user} ->
         {:ok, user}
-      {:error, changeset} -> 
+      {:error, changeset} ->
         IO.inspect(changeset, label: "Changeset Error")
         {:error, changeset}
     end
@@ -152,27 +152,40 @@ defmodule TimeManager.Accounts do
   @doc """
   Updates user role
   """
-  # def update_user_role(%User{} = user, new_role) do
-  #   user
-  #   |> User.changeset(%{role: new_role})
-  #   |> Repo.update()
-  # end
-  def update_user_role(%User{} = user, new_role) do
-    IO.inspect(user, label: "User before role update")
-    IO.inspect(new_role, label: "New role")
-    
-    changeset = User.changeset(user, %{role: new_role})
-    
-    IO.inspect(changeset, label: "Changeset before update")
-    
-    case Repo.update(changeset) do
-      {:ok, updated_user} = result ->
-        IO.inspect(updated_user, label: "Successfully updated user")
-        result
-      {:error, changeset} = error ->
-        IO.inspect(changeset, label: "Update failed with changeset")
-        error
-    end
-  end 
 
+  # def update_user_role(%User{} = user, new_role) do
+  #   IO.inspect(user, label: "User before role update")
+  #   IO.inspect(new_role, label: "New role")
+
+  #   changeset = User.changeset(user, %{role: new_role})
+
+  #   IO.inspect(changeset, label: "Changeset before update")
+
+  #   case Repo.update(changeset) do
+  #     {:ok, updated_user} = result ->
+  #       IO.inspect(updated_user, label: "Successfully updated user")
+  #       result
+  #     {:error, changeset} = error ->
+  #       IO.inspect(changeset, label: "Update failed with changeset")
+  #       error
+  #   end
+  # end
+  def debug_update_user(%User{} = user, attrs) do
+    IO.inspect(attrs, label: "Update User Attrs")
+
+    changeset = User.changeset(user, attrs)
+
+    IO.inspect(changeset.valid?, label: "Changeset Valid?")
+    IO.inspect(changeset.errors, label: "Changeset Errors")
+    IO.inspect(changeset.changes, label: "Changeset Changes")
+
+    case Repo.update(changeset) do
+      {:ok, updated_user} ->
+        IO.inspect(updated_user, label: "Successfully Updated User")
+        {:ok, updated_user}
+      {:error, failed_changeset} ->
+        IO.inspect(failed_changeset.errors, label: "Update Failed - Errors")
+        {:error, failed_changeset}
+    end
+  end
 end
