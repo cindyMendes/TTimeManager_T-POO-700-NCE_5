@@ -7,16 +7,22 @@
           <h1 class="text-bat-yellow text-2xl font-bold">Gotham City Management</h1>
         </router-link>
       </div>
-      <!-- Ajout du bouton de déconnexion -->
+      <!-- Logout button -->
       <div>
-        <button @click="logout" class="bg-bat-yellow text-bat-black px-4 py-2 rounded hover:bg-bat-silver transition duration-300">
+        <button
+          v-if="isLoggedIn"
+          @click="logout"
+          class="bg-bat-yellow text-bat-black px-4 py-2 rounded hover:bg-bat-silver transition-all duration-300"
+        >
           Logout
         </button>
       </div>
     </header>
+
     <main class="flex-grow">
-      <router-view></router-view> <!-- Affiche le composant correspondant à la route -->
+      <router-view></router-view>
     </main>
+
     <footer class="bg-bat-black border-t border-bat-yellow text-bat-silver p-4">
       <div class="container mx-auto flex justify-between items-center">
         <p>&copy; 2024 Gotham City Time Management. All rights reserved.</p>
@@ -32,24 +38,41 @@
 
 <script>
 export default {
+  data() {
+    return {
+      isLoggedIn: false
+    }
+  },
+  
+  created() {
+    // Vérifier le token au chargement
+    this.checkLoginStatus();
+  },
+  
   methods: {
+    checkLoginStatus() {
+      const token = localStorage.getItem('token');
+      console.log('Token found:', token); // Pour déboguer
+      this.isLoggedIn = !!token;
+    },
+    
     logout() {
-      // Supprimer le token (si tu utilises localStorage ou une autre méthode)
       localStorage.removeItem('token');
-      // Redirection vers la page de connexion après déconnexion
+      this.isLoggedIn = false;
       this.$router.push('/login');
+    }
+  },
+  
+  // Observer les changements de route
+  watch: {
+    '$route'() {
+      this.checkLoginStatus();
     }
   }
 }
 </script>
 
-
 <style scoped>
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
 @media (min-width: 1024px) {
   header {
     display: flex;

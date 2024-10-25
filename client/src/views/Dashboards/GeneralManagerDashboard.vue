@@ -4,6 +4,68 @@
       <h1 class="text-3xl font-bold text-bat-yellow">Tableau de Bord du Maître de Gotham</h1>
     </header>
 
+    <!-- Notifications Container -->
+    <div class="fixed top-4 right-4 z-50 space-y-4">
+      <div 
+        v-if="notification.show"
+        class="notification-slide-in bg-zinc-800/90 backdrop-blur-sm border rounded-lg shadow-2xl overflow-hidden"
+        :class="{
+          'border-green-400 bg-green-900/50': notification.type === 'success',
+          'border-red-400 bg-red-900/50': notification.type === 'error'
+        }"
+      >
+        <div class="px-4 py-3 flex items-start">
+          <!-- Icon -->
+          <div class="flex-shrink-0 mr-3">
+            <svg 
+              v-if="notification.type === 'success'"
+              class="h-6 w-6 text-green-200" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <svg 
+              v-else
+              class="h-6 w-6 text-red-200" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          
+          <!-- Content -->
+          <div class="flex-1">
+            <p class="font-bold" :class="{
+              'text-green-200': notification.type === 'success',
+              'text-red-200': notification.type === 'error'
+            }">
+              {{ notification.title }}
+            </p>
+            <p class="mt-1 text-sm" :class="{
+              'text-green-200': notification.type === 'success',
+              'text-red-200': notification.type === 'error'
+            }">
+              {{ notification.message }}
+            </p>
+          </div>
+          
+          <!-- Close Button -->
+          <button 
+            @click="dismissNotification"
+            class="flex-shrink-0 ml-4 text-gray-400 hover:text-gray-200 transition-colors duration-200"
+          >
+            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <!-- General Manager Profile Card -->
       <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300">
@@ -145,6 +207,15 @@ export default {
       error: null,
       currentUserId: localStorage.getItem('userId'),
       username: ''
+
+      notification: {
+        show: false,
+        type: 'success',
+        title: '',
+        message: '',
+        timeout: null
+      }
+
     };
   },
 
@@ -185,9 +256,17 @@ export default {
         await api.put(`/users/${user.id}/promote`);
         await this.getAllEmployeeManagerUsers();
         this.selectedUserId = '';
-        this.$toast.success(`${user.username} a été promu au rôle de manager`);
+        this.showNotification(
+          'success',
+          'Promotion Réussie',
+          `${user.username} a été promu au rôle de manager.`
+        );
       } catch (error) {
-        this.handleError(error, 'la promotion de l\'utilisateur');
+        this.showNotification(
+          'error',
+          'Erreur !',
+          error.response?.data?.errors?.detail || "Une erreur s'est produite lors de la promotion."
+        );
       }
     },
 
@@ -196,9 +275,17 @@ export default {
         await api.put(`/users/${user.id}/demote`);
         await this.getAllEmployeeManagerUsers();
         this.selectedUserId = '';
-        this.$toast.success(`${user.username} a été rétrogradé au rôle d'employé`);
+        this.showNotification(
+          'success',
+          'Rétrogradation Réussie',
+          `${user.username} a été rétrogradé au rôle d'employé.`
+        );
       } catch (error) {
-        this.handleError(error, 'la rétrogradation de l\'utilisateur');
+        this.showNotification(
+          'error',
+          'Erreur !',
+          error.response?.data?.errors?.detail || "Une erreur s'est produite lors de la rétrogradation."
+        );
       }
     },
 
@@ -230,33 +317,86 @@ export default {
       setTimeout(() => {
         this.error = null;
       }, 5000);
+    },
+
+    showNotification(type, title, message) {
+      // Clear any existing timeout
+      if (this.notification.timeout) {
+        clearTimeout(this.notification.timeout);
+      }
+
+      // Set new notification
+      this.notification = {
+        show: true,
+        type,
+        title,
+        message,
+        timeout: setTimeout(() => {
+          this.dismissNotification();
+        }, 5000)
+      };
+    },
+
+    dismissNotification() {
+      this.notification.show = false;
+      if (this.notification.timeout) {
+        clearTimeout(this.notification.timeout);
+      }
     }
+
   }
 };
 </script>
 
 <style scoped>
-.bat-button {
-  @apply py-2 px-4 rounded-md text-sm font-medium transition duration-150 ease-in-out;
-}
+  /* Animation for notification */
+  .notification-slide-in {
+    animation: slideIn 0.5s ease-out;
+  }
 
-.bat-button-blue {
-  @apply bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
-}
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
 
-.bat-button-red {
-  @apply bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
-}
+  @keyframes slideOut {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
 
-.bat-button-gray {
-  @apply bg-gray-600 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
-}
+  .bat-button {
+    @apply py-2 px-4 rounded-md text-sm font-medium transition duration-150 ease-in-out;
+  }
 
-.bat-button-yellow {
-  @apply bg-yellow-500 text-black hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2;
-}
+  .bat-button-blue {
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
 
-.bat-button:disabled {
-  @apply opacity-50 cursor-not-allowed;
-}
+  .bat-button-red {
+    @apply bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+  }
+
+  .bat-button-gray {
+    @apply bg-gray-600 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  }
+
+  .bat-button-yellow {
+    @apply bg-yellow-500 text-black hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2;
+  }
+
+  .bat-button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
 </style>
