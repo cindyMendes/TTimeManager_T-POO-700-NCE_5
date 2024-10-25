@@ -48,26 +48,27 @@
 </template>
 
 <script>
-import { defineComponent, ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { defineComponent, ref, onMounted, watch } from "vue";
 import { BarChart } from "vue-chart-3";
 import "chart.js/auto";
 import api from '@/services/api_token';
 
 export default defineComponent({
   name: 'HoursChart',
-  
   components: {
     BarChart,
   },
-
-  setup() {
-    const route = useRoute();
+  props: {
+    userId: {
+      type: [String, Number],
+      required: true,
+    },
+  },
+  setup(props) {
     const chartData = ref(null);
     const loading = ref(false);
     const error = ref(null);
     const totalHours = ref(null);
-    const userId = ref(route.query.id);
     const selectedStartDate = ref(null);
 
     const chartOptions = ref({
@@ -78,7 +79,7 @@ export default defineComponent({
           title: {
             display: true,
             text: "Hours Worked",
-            color: '#C0C0C0'  // bat-silver
+            color: '#C0C0C0'
           },
           ticks: {
             color: '#C0C0C0'
@@ -105,7 +106,7 @@ export default defineComponent({
     });
 
     const fetchChartData = async () => {
-      if (!selectedStartDate.value || !userId.value) {
+      if (!selectedStartDate.value || !props.userId) {
         error.value = "Please select a start date and ensure user is selected.";
         return;
       }
@@ -120,7 +121,7 @@ export default defineComponent({
 
         const response = await api.get("/reports/weekly_hours", {
           params: { 
-            user_id: userId.value, 
+            user_id: props.userId, 
             start_date: startDate, 
             end_date: endDate 
           }
@@ -177,26 +178,11 @@ export default defineComponent({
 
     const handleError = (error) => {
       console.error('Error:', error);
-      if (error.response) {
-        switch (error.response.status) {
-          case 401:
-            error.value = "Session expirée. Veuillez vous reconnecter.";
-            setTimeout(() => window.location.href = '/login', 2000);
-            break;
-          case 403:
-            error.value = "Accès non autorisé.";
-            break;
-          case 404:
-            error.value = "Données non trouvées pour cette période.";
-            break;
-          default:
-            error.value = "Erreur lors de la récupération des données.";
-        }
-      } else if (error.request) {
-        error.value = "Impossible de contacter le serveur.";
-      } else {
-        error.value = "Une erreur est survenue lors du chargement des données.";
-      }
+      error.value = error.response?.status === 401
+        ? "Session expirée. Veuillez vous reconnecter."
+        : error.response?.status === 403
+        ? "Accès non autorisé."
+        : "Erreur lors de la récupération des données.";
     };
 
     onMounted(() => {
@@ -204,9 +190,13 @@ export default defineComponent({
       today.setDate(today.getDate() - today.getDay() + 1); // Set to Monday of current week
       selectedStartDate.value = today.toISOString().split('T')[0];
       
-      if (userId.value) {
+      if (props.userId) {
         fetchChartData();
       }
+    });
+
+    watch(() => props.userId, (newUserId) => {
+      if (newUserId) fetchChartData();
     });
 
     return {

@@ -93,7 +93,7 @@
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
           <i class="fas fa-chart-bar mr-2"></i> Analyse des Patrouilles de l'Utilisateur
         </h2>
-        <ChartManager :userId="selectedUserId" />
+        <ChartManager :userId="selectedUserId" :username="username" />
       </div>
 
       <!-- Selected User Daily Hours Chart Card -->
@@ -143,7 +143,8 @@ export default {
       selectedUserId: '',
       users: [],
       error: null,
-      currentUserId: localStorage.getItem('userId')
+      currentUserId: localStorage.getItem('userId'),
+      username: ''
     };
   },
 
@@ -153,6 +154,14 @@ export default {
     },
     selectedUser() {
       return this.users.find(user => user.id === this.selectedUserId);
+    }
+  },
+
+  watch: {
+    selectedUserId(newUserId) {
+      // Met à jour le `username` lorsque `selectedUserId` change
+      const selected = this.users.find(user => user.id === newUserId);
+      this.username = selected ? selected.username : '';
     }
   },
 

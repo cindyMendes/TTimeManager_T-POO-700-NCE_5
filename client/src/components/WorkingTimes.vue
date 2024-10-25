@@ -171,15 +171,21 @@ import api from '@/services/api_token';
 
 export default {
   name: "WorkingTimes",
+  props: {
+    userId: {
+      type: [String, Number],
+      required: true,
+    },
+  },
   
-  setup() {
+  setup(props) {
     const route = useRoute();
     const workingTimes = ref([]);
     const loading = ref(true);
     const error = ref(null);
     const editMode = ref(false);
     const createMode = ref(false);
-    const userId = ref(null);
+    // const userId = ref(null);
 
     const editForm = ref({
       id: null,
@@ -193,20 +199,24 @@ export default {
     });
 
     const getWorkingTimes = async () => {
-      if (!userId.value) return;
+  if (!props.userId) {
+    console.log("Aucun ID utilisateur fourni.");
+    return;
+  }
 
-      loading.value = true;
-      error.value = null;
-      try {
-      
-        const response = await api.get(`/workingtimes/${userId.value}/times`);
-        workingTimes.value = response.data.data || [];
-      } catch (err) {
-        handleError(err, "lors de la récupération des journaux");
-      } finally {
-        loading.value = false;
-      }
-    };
+  loading.value = true;
+  error.value = null;
+  try {
+    console.log(`Fetching working times for user ID: ${props.userId}`);
+    const response = await api.get(`/workingtimes/${props.userId}/times`);
+    console.log("API response:", response.data);
+    workingTimes.value = response.data.data || [];
+  } catch (err) {
+    handleError(err, "lors de la récupération des journaux");
+  } finally {
+    loading.value = false;
+  }
+};
 
     const handleCreate = async () => {
       if (!validateTimes(newWorkingTime.value)) return;
@@ -221,7 +231,7 @@ export default {
           }
         };
 
-        await api.post(`/workingtime/${userId.value}`, data);
+        await api.post(`/workingtime/${props.userId}`, data);
         await getWorkingTimes();
         cancelCreate();
       } catch (err) {
@@ -357,15 +367,13 @@ export default {
     };
 
     onMounted(() => {
-      userId.value = route.query.id;
-      if (userId.value) {
+      if (props.userId) {
         getWorkingTimes();
       }
     });
 
-    watch(() => route.query.id, (newId) => {
-      userId.value = newId;
-      if (userId.value) {
+    watch(() => props.userId, (newId) => {
+      if (newId) {
         getWorkingTimes();
       }
     });
@@ -378,7 +386,6 @@ export default {
       createMode,
       editForm,
       newWorkingTime,
-      userId,
       editWorkingTime,
       showCreateForm,
       handleCreate,

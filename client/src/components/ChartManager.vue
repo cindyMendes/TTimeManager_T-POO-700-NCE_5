@@ -1,7 +1,7 @@
 <template>
   <div class="bg-bat-gray rounded-lg shadow-bat p-6 flex flex-col items-center justify-center min-h-screen">
     <h2 class="text-2xl font-bold mb-6 text-bat-yellow text-center">
-      Analytique du Vigilant de Gotham - Utilisateur {{ displayUserId }}
+      Analytique du Vigilant de Gotham - {{ displayUserName }}
     </h2>
 
     <div v-if="loading" class="text-center py-4">
@@ -33,28 +33,34 @@
   </div>
 </template>
 
-
 <script>
 import { ref, onMounted, computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
-import { Pie } from 'vue-chartjs'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Pie } from 'vue-chartjs';
 import api from '@/services/api_token';
 
-ChartJS.register(ArcElement, Tooltip, Legend)
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default {
   name: 'ChartManager',
   components: { Pie },
-  setup() {
-    const route = useRoute();
+  props: {
+    userId: {
+      type: [String, Number],
+      required: true,
+    },
+    username:{
+      type: String,
+      required: true
+    }
+  },
+  setup(props) {
     const loading = ref(true);
     const errorMessage = ref(null);
     const workingTimes = ref([]);
     const timeDistributionData = ref(null);
-    const userId = ref(null);
-    const displayUserId = computed(() => userId.value || 'Non sélectionné');
-
+    const displayUserId = computed(() => props.userId || 'Non sélectionné');
+    const displayUserName = computed(() => props.username || 'Non sélectionné');
 
     const batColors = {
       yellow: '#FFFF00',
@@ -91,91 +97,58 @@ export default {
       return `${hours}h ${mins}m`;
     };
 
-
     const fetchData = async () => {
-  console.log("Fetching data for user ID:", userId.value);
-  if (!userId.value) {
-    errorMessage.value = "Aucun utilisateur sélectionné";
-    return;
-  }
-  loading.value = true;
-  errorMessage.value = null;
-  try {
-    const response = await api.get(`/workingtimes/${userId.value}/times`);
-    // console.log("API response:", response.data);
-
-    const data = response.data.data;
-    if (Array.isArray(data)) {
-      workingTimes.value = data;  
-    } else if (typeof data === 'object' && data !== null) {
-      workingTimes.value = [data]; 
-    } else {
-      throw new Error("Les données retournées ne sont ni un tableau ni un objet valide.");
-    }
-    
-    processChartData(); 
-  } catch (error) {
-    console.error("Error details:", error.response || error);
-    if (error.response?.status === 401) {
-      errorMessage.value = "Session expirée. Veuillez vous reconnecter.";
-    } else if (error.response?.status === 403) {
-      errorMessage.value = "Accès non autorisé.";
-    } else {
-      errorMessage.value = "Erreur d'accès au Bat-Ordinateur. Veuillez réessayer.";
-    }
-  } finally {
-    loading.value = false;
-  }
-};
-
-const processChartData = () => {
-  if (!Array.isArray(workingTimes.value) || workingTimes.value.length === 0) {
-    console.log("No working times data available");
-    return;
-  }
-
-  const timeData = workingTimes.value.map(time => {
-    const start = new Date(time.start);
-    const end = new Date(time.end);
-    return (end - start) / (1000 * 60); 
-  });
-
-  timeDistributionData.value = {
-    labels: workingTimes.value.map((_, index) => `Patrol ${index + 1}`),
-    datasets: [{
-      data: timeData,
-      backgroundColor: Object.values(batColors),
-    }],
-  };
-};
-
-
-
-    onMounted(() => {
-      userId.value = route.query.id;
-      console.log("Component mounted. User ID:", userId.value);
-      if (userId.value) {
-        fetchData();
-      } else {
+      if (!props.userId) {
         errorMessage.value = "Aucun utilisateur sélectionné";
+        return;
       }
-    });
-
-    watch(() => route.query.id, (newId) => {
-      userId.value = newId;
-      console.log("User ID changed to:", userId.value);
-      if (userId.value) {
-        fetchData();
-      } else {
-        errorMessage.value = "Aucun utilisateur sélectionné";
+      loading.value = true;
+      errorMessage.value = null;
+      try {
+        const response = await api.get(`/workingtimes/${props.userId}/times`);
+        const data = response.data.data;
+        workingTimes.value = Array.isArray(data) ? data : [data];
+        processChartData();
+      } catch (error) {
+        handleError(error);
+      } finally {
+        loading.value = false;
       }
-    });
+    };
 
-    
+    const processChartData = () => {
+      if (!workingTimes.value.length) return;
+
+      const timeData = workingTimes.value.map(time => {
+        const start = new Date(time.start);
+        const end = new Date(time.end);
+        return (end - start) / (1000 * 60);
+      });
+
+      timeDistributionData.value = {
+        labels: workingTimes.value.map((_, index) => `Patrol ${index + 1}`),
+        datasets: [{
+          data: timeData,
+          backgroundColor: Object.values(batColors),
+        }],
+      };
+    };
+
+    const handleError = (error) => {
+      errorMessage.value = error.response?.status === 401 
+        ? "Session expirée. Veuillez vous reconnecter." 
+        : error.response?.status === 403 
+        ? "Accès non autorisé."
+        : "Erreur d'accès au Bat-Ordinateur. Veuillez réessayer.";
+    };
+
+    onMounted(() => fetchData());
+
+    watch(() => props.userId, () => fetchData());
 
     const chartData = computed(() => ({
-      labels: timeDistributionData.value ? timeDistributionData.value.labels : [],
-      datasets: timeDistributionData.value ? timeDistributionData.value.datasets : []
+      labels: timeDistributionData.value?.labels || [],
+      datasets: timeDistributionData.value?.datasets || [],
     }));
 
     return {
@@ -185,7 +158,14 @@ const processChartData = () => {
       chartOptions,
       fetchData,
       displayUserId,
+      displayUserName
     };
   },
 };
 </script>
+
+<style scoped>
+.bat-button {
+  @apply py-2 px-4 rounded transition duration-200;
+}
+</style>
