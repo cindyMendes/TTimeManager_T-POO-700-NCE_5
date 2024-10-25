@@ -232,7 +232,7 @@ export default {
         };
 
 
-        await api.post(`/workingtimes/${props.userId}`, data);
+        await api.post(`/workingtime/${props.userId}`, data);
         await getWorkingTimes();
         cancelCreate();
       } catch (err) {
@@ -255,7 +255,7 @@ export default {
           }
         };
 
-        await api.put(`/workingtimes/${editForm.value.id}`, data);
+        await api.put(`/workingtime/${editForm.value.id}`, data);
         await getWorkingTimes();
         cancelEdit();
       } catch (err) {
@@ -273,7 +273,7 @@ export default {
       loading.value = true;
       error.value = null;
       try {
-        await api.delete(`/workingtimes/${id}`);
+        await api.delete(`/workingtime/${id}`);
         workingTimes.value = workingTimes.value.filter(wt => wt.id !== id);
       } catch (err) {
         handleError(err, "lors de la suppression du journal");
