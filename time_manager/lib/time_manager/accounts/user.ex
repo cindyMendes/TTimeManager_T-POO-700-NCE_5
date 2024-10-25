@@ -58,4 +58,15 @@ defmodule TimeManager.Accounts.User do
   defp get_attr(attrs, key) do
     attrs[key] || attrs[Atom.to_string(key)]
   end
+
+  @doc """
+  Changeset specifically for updating a user's role.
+  This changeset only validates the role field.
+  """
+  def role_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:role])
+    |> validate_required([:role])
+    |> validate_inclusion(:role, @roles)
+  end
 end
