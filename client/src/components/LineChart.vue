@@ -1,58 +1,76 @@
-Linechart
-
-
 <template>
   <div class="bg-bat-gray rounded-lg shadow-bat p-6">
-    <h2 class="text-1xl font-bold mb-6 text-bat-yellow">Daily Hours Chart</h2>
+    <h2 class="text-1xl font-bold mb-6 text-bat-yellow">Daily Hours Line Chart</h2>
 
-    <!-- Date picker to select the start of the week -->
+    <!-- Date picker -->
     <div class="date-picker">
-      <label for="start-date" class="block text-sm font-medium text-bat-silver mb-1">Select Start Date:</label>
-      <input
-        type="date"
-        id="start-date"
-        v-model="selectedStartDate"
+      <label for="start-date" class="block text-sm font-medium text-bat-silver mb-1">
+        Select Start Date:
+      </label>
+      <input 
+        type="date" 
+        id="start-date" 
+        v-model="selectedStartDate" 
         @change="fetchChartData"
-        class="px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow"
+        :disabled="loading"
+        class="px-3 py-2 bg-bat-gray border border-bat-silver rounded-md text-bat-silver focus:outline-none focus:border-bat-yellow" 
       />
     </div>
 
-    <!-- Chart container -->
-    <div class="chart-container">
-      <LineChart v-if="chartData" :chart-data="chartData" :options="chartOptions" />
-      <p v-else class="text-bat-silver">{{ loadingMessage }}</p>
+    <!-- Loading state -->
+    <div v-if="loading" class="flex justify-center items-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-bat-yellow"></div>
+      <span class="ml-2 text-bat-silver">Loading chart data...</span>
     </div>
 
-    <!-- Total hours worked for the week -->
-    <div v-if="totalHours !== null" class="total-hours text-bat-silver">
-      <p>Total hours worked for the week: <strong>{{ totalHours }}</strong></p>
-    </div>
-
-    <!-- Error display -->
-    <div v-if="error" class="mt-4 bg-red-900 text-bat-silver p-4 rounded-md">
+    <!-- Error message -->
+    <div v-else-if="error" class="bg-red-900 text-bat-silver p-4 rounded-md my-4">
       {{ error }}
+    </div>
+
+    <!-- Chart -->
+    <div v-else class="chart-container">
+      <LineChart 
+        v-if="chartData" 
+        :chart-data="chartData" 
+        :options="chartOptions" 
+      />
+      <p v-else class="text-bat-silver text-center py-4">
+        No data available for the selected period
+      </p>
+    </div>
+    
+    <!-- Total hours -->
+    <div v-if="totalHours !== null" class="total-hours mt-4 text-bat-silver">
+      <p>Total hours worked: <strong class="text-bat-yellow">{{ totalHours.toFixed(1) }}</strong></p>
     </div>
   </div>
 </template>
 
 <script>
-import { defineComponent, ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { defineComponent, ref, onMounted, watch } from "vue";
 import { LineChart } from "vue-chart-3";
 import "chart.js/auto";
 import api from '@/services/api_token';
 
 export default defineComponent({
-  name: 'LineChartComponent',
+  name: 'HoursLineChart',
   components: {
     LineChart,
   },
-  setup() {
+  props: {
+    userId: {
+      type: [String, Number],
+      required: true,
+    },
+  },
+  setup(props) {
     const chartData = ref(null);
-    const loadingMessage = ref("Loading chart...");
-    const totalHours = ref(null); // For holding the total hours worked for the week
+    const loading = ref(false);
     const error = ref(null);
-    
+    const totalHours = ref(null);
+    const selectedStartDate = ref(null);
+
     const chartOptions = ref({
       responsive: true,
       scales: {
@@ -61,7 +79,7 @@ export default defineComponent({
           title: {
             display: true,
             text: "Hours Worked",
-            color: '#C0C0C0'  // bat-silver color
+            color: '#C0C0C0'
           },
           ticks: {
             color: '#C0C0C0'
@@ -87,118 +105,56 @@ export default defineComponent({
       }
     });
 
-    const route = useRoute();
-    const userId = ref(route.query.id);
-    const selectedStartDate = ref(null);    // For the date picker
-    const workingTimes = ref([]);           // To store the working times fetched from the new API
-    const weeklyHours = ref([]);            // To store the weekly_hours data
-    const totalWorkingHours = ref(0);       // Total hours from workingTimes
-    const totalReportedHours = ref(0);      // Total hours from weekly_hours
-
     const fetchChartData = async () => {
-      if (!selectedStartDate.value || !userId.value) {
-        error.value = "Please select a start date and user.";
+      if (!selectedStartDate.value || !props.userId) {
+        error.value = "Please select a start date and ensure user is selected.";
         return;
       }
 
+      loading.value = true;
       error.value = null;
-      loadingMessage.value = "Loading chart...";
-      chartData.value = null;
-
-      const startDate = selectedStartDate.value;
-      const currentWeekDates = getCurrentWeekDates(startDate);
-      const endDate = currentWeekDates[6];
 
       try {
-        await Promise.all([
-          fetchWorkingTimesData(),
-          fetchWeeklyHoursData(startDate, endDate)
-        ]);
-        processChartData(currentWeekDates);
-      } catch (err) {
-        handleError(err);
-      }
-    };
+        const startDate = selectedStartDate.value;
+        const currentWeekDates = getCurrentWeekDates(startDate);
+        const endDate = currentWeekDates[6];
 
-    const fetchWorkingTimesData = async () => {
-      try {
-        const response = await api.get(`/clocks/${userId.value}`);
-        workingTimes.value = response.data.data;
-      } catch (error) {
-        throw new Error("Error fetching working times");
-      }
-    };
-
-    const fetchWeeklyHoursData = async (startDate, endDate) => {
-      try {
         const response = await api.get("/reports/weekly_hours", {
           params: { 
-            user_id: userId.value, 
+            user_id: props.userId, 
             start_date: startDate, 
             end_date: endDate 
           }
         });
-        weeklyHours.value = response.data.hours_by_day;
-      } catch (error) {
-        throw new Error("Error fetching weekly hours");
-      }
-    };
 
-    const processChartData = (currentWeekDates) => {
-      const labels = currentWeekDates.map((date) => formatDateToLabel(date));
-      const workingHoursByDay = {};
-
-      let startTime = null;
-
-      workingTimes.value.sort((a, b) => new Date(a.time) - new Date(b.time));
-
-      workingTimes.value.forEach((entry) => {
-        const dateKey = entry.time.split("T")[0];
-        const entryTime = new Date(entry.time).getTime();
-
-        if (entry.status === true) {
-          startTime = entryTime;
-        } else if (entry.status === false && startTime !== null && entryTime > startTime) {
-          const duration = (entryTime - startTime) / (1000 * 60 * 60);
-          workingHoursByDay[dateKey] = (workingHoursByDay[dateKey] || 0) + duration;
-          startTime = null;
+        if (!response.data || !response.data.hours_by_day) {
+          throw new Error('Invalid data format received from server');
         }
-      });
 
-      const workingTimesData = labels.map((label) => {
-        const date = label.split(", ")[1];
-        return (workingHoursByDay[date] || 0);
-      });
+        const hoursByDay = response.data.hours_by_day;
+        const labels = currentWeekDates.map(date => formatDateToLabel(date));
+        const hoursWorked = labels.map((_, index) => {
+          const date = currentWeekDates[index];
+          return hoursByDay[date] || 0;
+        });
 
-      const weeklyHoursData = labels.map((label, index) => {
-        const date = currentWeekDates[index];
-        return (weeklyHours.value[date] || 0);
-      });
+        totalHours.value = hoursWorked.reduce((total, hours) => total + hours, 0);
 
-      totalWorkingHours.value = workingTimesData.reduce((total, hours) => total + hours, 0);
-      totalReportedHours.value = weeklyHoursData.reduce((total, hours) => total + hours, 0);
-
-      chartData.value = {
-        labels,
-        datasets: [
-          {
-            label: "Clock Times",
-            backgroundColor: "rgba(66, 165, 245, 0.5)",
+        chartData.value = {
+          labels,
+          datasets: [{
+            label: "Hours Worked",
+            backgroundColor: "#42A5F5",
             borderColor: "#42A5F5",
-            fill: false,
-            data: workingTimesData,
-          },
-          {
-            label: "Reported Weekly Hours",
-            backgroundColor: "rgba(102, 187, 106, 0.5)",
-            borderColor: "#66BB6A",
-            fill: false,
-            data: weeklyHoursData,
-          },
-        ],
-      };
-
-      totalHours.value = totalWorkingHours.value + totalReportedHours.value;
+            fill: false,  // Important for LineChart
+            data: hoursWorked,
+          }]
+        };
+      } catch (err) {
+        handleError(err);
+      } finally {
+        loading.value = false;
+      }
     };
 
     const getCurrentWeekDates = (startDate) => {
@@ -207,46 +163,41 @@ export default defineComponent({
       for (let i = 0; i < 7; i++) {
         const date = new Date(start);
         date.setDate(start.getDate() + i);
-        dates.push(date.toISOString().split("T")[0]);
+        dates.push(date.toISOString().split('T')[0]);
       }
       return dates;
     };
 
     const formatDateToLabel = (dateString) => {
       const date = new Date(dateString);
-      const formatter = new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-      });
-      return formatter.format(date);
+      return new Intl.DateTimeFormat('fr-FR', { 
+        weekday: 'short',
+        month: 'short', 
+        day: 'numeric'
+      }).format(date);
     };
 
     const handleError = (error) => {
       console.error('Error:', error);
-      if (error.response) {
-        switch (error.response.status) {
-          case 401:
-            error.value = "Session expirée. Veuillez vous reconnecter.";
-            break;
-          case 403:
-            error.value = "Accès non autorisé.";
-            break;
-          default:
-            error.value = "Erreur lors de la récupération des données.";
-        }
-      } else if (error.request) {
-        error.value = "Impossible de contacter le serveur.";
-      } else {
-        error.value = "Une erreur est survenue lors du chargement des données.";
-      }
+      error.value = error.response?.status === 401
+        ? "Session expirée. Veuillez vous reconnecter."
+        : error.response?.status === 403
+        ? "Accès non autorisé."
+        : "Erreur lors de la récupération des données.";
     };
 
-    // When the component mounts, set the initial selected date to today and fetch data
     onMounted(() => {
-      const today = new Date().toISOString().split("T")[0];   // Set to today as the default
-      selectedStartDate.value = today;
-      fetchChartData();                                       // Fetch the initial data based on today's date
+      const today = new Date();
+      today.setDate(today.getDate() - today.getDay() + 1); // Set to Monday of current week
+      selectedStartDate.value = today.toISOString().split('T')[0];
+      
+      if (props.userId) {
+        fetchChartData();
+      }
+    });
+
+    watch(() => props.userId, (newUserId) => {
+      if (newUserId) fetchChartData();
     });
 
     return {
@@ -254,11 +205,11 @@ export default defineComponent({
       chartOptions,
       selectedStartDate,
       fetchChartData,
-      loadingMessage,
-      totalHours,
-      error
+      loading,
+      error,
+      totalHours
     };
-  },
+  }
 });
 </script>
 
@@ -270,10 +221,16 @@ export default defineComponent({
 .chart-container {
   width: 100%;
   height: 400px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 16px;
 }
 
 .total-hours {
   margin-top: 20px;
   font-size: 16px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
 }
 </style>
