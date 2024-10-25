@@ -30,48 +30,48 @@
       </div>
 
       <!-- Employee Selector -->
-      <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300 col-span-1 md:col-span-2 lg:col-span-3">
+      <!-- <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300 col-span-1 md:col-span-2 lg:col-span-3">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
           <i class="fas fa-user-check mr-2"></i> Sélection de l'Agent
         </h2>
-        <select v-model="selectedEmployeeId" class="w-full p-2 bg-bat-black text-bat-silver border border-bat-gray rounded focus:outline-none focus:border-bat-yellow">
+        <select v-model="selectedEmployeeId" @change="updateSelectedEmployeeInfo" class="w-full p-2 bg-bat-black text-bat-silver border border-bat-gray rounded focus:outline-none focus:border-bat-yellow">
           <option value="">Sélectionner un agent</option>
           <option v-for="employee in teamEmployees" :key="employee.id" :value="employee.id">
             {{ employee.name }}
           </option>
         </select>
-      </div>
+      </div> -->
 
       <!-- Employee Working Times Card -->
       <div v-if="selectedEmployeeId" class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300 col-span-1 md:col-span-2 lg:col-span-3">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
-          <i class="fas fa-calendar-alt mr-2"></i> Journal de Patrouille de l'Agent
+          <i class="fas fa-calendar-alt mr-2"></i> Journal de Patrouille de {{ selectedEmployeeName }}
         </h2>
-        <WorkingTimes :userId="selectedEmployeeId" />
+        <WorkingTimes :userId="selectedEmployeeId" :username="selectedEmployeeName" />
       </div>
 
       <!-- Employee Chart Manager Card -->
       <div v-if="selectedEmployeeId" class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300 col-span-1 md:col-span-2 lg:col-span-3">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
-          <i class="fas fa-chart-bar mr-2"></i> Analyse des Patrouilles de l'Agent
+          <i class="fas fa-chart-bar mr-2"></i> Analyse des Patrouilles de {{ selectedEmployeeName }}
         </h2>
-        <ChartManager :userId="selectedEmployeeId" />
+        <ChartManager :userId="selectedEmployeeId" :username="selectedEmployeeName" />
       </div>
 
       <!-- Employee Daily Hours Chart Card -->
       <div v-if="selectedEmployeeId" class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300 col-span-1 md:col-span-2 lg:col-span-3">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
-          <i class="fas fa-chart-line mr-2"></i> Heures Quotidiennes de l'Agent
+          <i class="fas fa-chart-line mr-2"></i> Heures Quotidiennes de {{ selectedEmployeeName }}
         </h2>
-        <DailyHoursChart :userId="selectedEmployeeId" />
+        <DailyHoursChart :userId="selectedEmployeeId" :username="selectedEmployeeName" />
       </div>
 
       <!-- Employee Line Chart Card -->
       <div v-if="selectedEmployeeId" class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300 col-span-1 md:col-span-2 lg:col-span-3">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
-          <i class="fas fa-chart-line mr-2"></i> Activité de Patrouille de l'Agent
+          <i class="fas fa-chart-line mr-2"></i> Activité de Patrouille de {{ selectedEmployeeName }}
         </h2>
-        <LineChart :userId="selectedEmployeeId" />
+        <LineChart :userId="selectedEmployeeId" :username="selectedEmployeeName" />
       </div>
     </div>
   </div>
@@ -85,6 +85,7 @@ import ChartManager from '@/components/ChartManager.vue';
 import DailyHoursChart from '@/components/charts/user/DailyHoursChart.vue';
 import LineChart from '@/components/LineChart.vue';
 import TeamList from '@/components/TeamList.vue';
+import api from '@/services/api_token';
 
 export default {
   name: 'ManagerDashboard',
@@ -95,22 +96,36 @@ export default {
     ChartManager,
     DailyHoursChart,
     LineChart,
-    TeamList
+    TeamList,
   },
   data() {
     return {
-      currentUserId: '123', // Example manager ID
+      currentUserId: localStorage.getItem('userId'), // ID du manager connecté
       selectedEmployeeId: '',
-      teamEmployees: [
-        { id: '1', name: 'John Doe' },
-        { id: '2', name: 'Jane Smith' },
-        // ... other team members
-      ]
-    }
-  }
-}
+      selectedEmployeeName: '', // Nom de l'agent sélectionné
+      teamEmployees: [], // Liste des employés de l'équipe
+    };
+  },
+  mounted() {
+    this.fetchTeamEmployees();
+  },
+  methods: {
+    async fetchTeamEmployees() {
+      try {
+        const response = await api.get('/team/employees'); // API fictive pour obtenir la liste des employés
+        this.teamEmployees = response.data.employees;
+      } catch (error) {
+        console.error("Erreur lors de la récupération des employés de l'équipe :", error);
+      }
+    },
+    updateSelectedEmployeeInfo() {
+      const selectedEmployee = this.teamEmployees.find(emp => emp.id === this.selectedEmployeeId);
+      this.selectedEmployeeName = selectedEmployee ? selectedEmployee.name : '';
+    },
+  },
+};
 </script>
 
 <style scoped>
-/* You can add any additional styles here if needed */
+/* Styles additionnels si nécessaire */
 </style>

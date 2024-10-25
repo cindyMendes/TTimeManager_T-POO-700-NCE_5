@@ -8,9 +8,9 @@
       <!-- User Profile Card -->
       <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
-          <i class="fas fa-user mr-2"></i> Profil du Vigilant
+          <i class="fas fa-user mr-2"></i> Profil de {{ username }}
         </h2>
-        <User />
+        <User :username="username" />
       </div>
 
       <!-- Clock Manager Card -->
@@ -24,32 +24,33 @@
       <!-- Working Times Card -->
       <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
-          <i class="fas fa-calendar-alt mr-2"></i> Journal de Patrouille
+          <i class="fas fa-calendar-alt mr-2"></i> Journal de Patrouille de {{ username }}
         </h2>
-        <WorkingTimes :userId="currentUserId" />
+        <WorkingTimes :userId="currentUserId" :username="username" />
       </div>
 
       <!-- Chart Manager Card -->
-      <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300 col-span-1 md:col-span-2 lg:col-span-3">
+      <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
+          <i class="fas fa-chart-bar mr-2"></i> Analyse de Patrouille
         </h2>
-        <ChartManager :userId="currentUserId" />
+        <ChartManager :userId="currentUserId" :username="username" />
       </div>
 
       <!-- Daily Hours Chart Card -->
-      <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300 col-span-1 md:col-span-2 lg:col-span-3">
+      <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
           <i class="fas fa-chart-line mr-2"></i> Heures Quotidiennes
         </h2>
-        <DailyHoursChart :userId="currentUserId" />
+        <DailyHoursChart :userId="currentUserId" :username="username" />
       </div>
 
       <!-- Line Chart Card -->
-      <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300 col-span-1 md:col-span-2 lg:col-span-3">
+      <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
           <i class="fas fa-chart-line mr-2"></i> Activité de Patrouille
         </h2>
-        <LineChart :userId="currentUserId" />
+        <LineChart :userId="currentUserId" :username="username" />
       </div>
     </div>
   </div>
@@ -62,6 +63,7 @@ import WorkingTimes from '@/components/WorkingTimes.vue';
 import ChartManager from '@/components/ChartManager.vue';
 import DailyHoursChart from '@/components/charts/user/DailyHoursChart.vue';
 import LineChart from '@/components/LineChart.vue';
+import api from '@/services/api_token';
 
 export default {
   name: 'EmployeeDashboard',
@@ -71,16 +73,30 @@ export default {
     WorkingTimes,
     ChartManager,
     DailyHoursChart,
-    LineChart
+    LineChart,
   },
   data() {
     return {
-      currentUserId: '123' // Example user ID
-    }
-  }
-}
+      currentUserId: localStorage.getItem('userId') || '123', // Récupérer l'ID de l'utilisateur actuel
+      username: '', // Nom de l'utilisateur actuel
+    };
+  },
+  mounted() {
+    this.fetchCurrentUserInfo();
+  },
+  methods: {
+    async fetchCurrentUserInfo() {
+      try {
+        const response = await api.get(`/users/${this.currentUserId}`);
+        this.username = response.data.username;
+      } catch (error) {
+        console.error("Erreur lors de la récupération des informations de l'utilisateur :", error);
+      }
+    },
+  },
+};
 </script>
 
 <style scoped>
-/* You can add any additional styles here if needed */
+/* Styles additionnels si nécessaire */
 </style>
