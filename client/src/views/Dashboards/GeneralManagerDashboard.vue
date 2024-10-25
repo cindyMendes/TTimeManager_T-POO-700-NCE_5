@@ -206,7 +206,7 @@ export default {
       users: [],
       error: null,
       currentUserId: localStorage.getItem('userId'),
-      username: ''
+      username: '',
 
       notification: {
         show: false,
