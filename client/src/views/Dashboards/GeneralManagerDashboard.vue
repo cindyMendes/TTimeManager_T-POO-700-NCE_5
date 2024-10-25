@@ -21,10 +21,10 @@
         <ClockManager :userId="currentUserId" />
       </div>
 
-      <!-- Organization Overview Card -->
+      <!-- Team Organization Overview Card -->
       <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
-          <i class="fas fa-building mr-2"></i> Vue d'Ensemble de l'Organisation
+          <i class="fas fa-building mr-2"></i> Organisation des Teams
         </h2>
         <TeamList />
       </div>
