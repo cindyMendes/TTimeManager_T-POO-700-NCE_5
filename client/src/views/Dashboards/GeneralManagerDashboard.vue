@@ -145,9 +145,9 @@
       <!-- Selected User Working Times Card -->
       <div v-if="selectedUserId" class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300 col-span-1 md:col-span-2 lg:col-span-3">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
-          <i class="fas fa-calendar-alt mr-2"></i> Journal de Patrouille de l'Utilisateur
+          <i class="fas fa-calendar-alt mr-2"></i> Journal de Patrouille de {{ username }}
         </h2>
-        <WorkingTimes :userId="selectedUserId" />
+        <WorkingTimes :userId="selectedUserId"/>
       </div>
 
       <!-- Selected User Chart Manager Card -->
