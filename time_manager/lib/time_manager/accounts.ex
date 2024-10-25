@@ -150,26 +150,32 @@ defmodule TimeManager.Accounts do
   end
 
   @doc """
-  Updates user role
+  Updates a user's role.
+  Only updates the role field, leaving other fields unchanged.
   """
+  def update_user_role(%User{} = user, role) when role in ["employee", "manager", "general_manager"] do
+    IO.puts("Updating user #{user.id} to role: #{role}")
+    
+    result = user
+    |> User.role_changeset(%{role: role})
+    |> Repo.update()
+    
+    case result do
+      {:ok, updated_user} = success ->
+        IO.puts("Successfully updated user #{updated_user.id} to role: #{updated_user.role}")
+        success
+      {:error, changeset} = error ->
+        IO.puts("Failed to update user role. Errors: #{inspect(changeset.errors)}")
+        error
+    end
+  end
 
-  # def update_user_role(%User{} = user, new_role) do
-  #   IO.inspect(user, label: "User before role update")
-  #   IO.inspect(new_role, label: "New role")
+  def update_user_role(%User{}, invalid_role) do
+    IO.puts("Invalid role attempted: #{invalid_role}")
+    {:error, :invalid_role}
+  end
 
-  #   changeset = User.changeset(user, %{role: new_role})
 
-  #   IO.inspect(changeset, label: "Changeset before update")
-
-  #   case Repo.update(changeset) do
-  #     {:ok, updated_user} = result ->
-  #       IO.inspect(updated_user, label: "Successfully updated user")
-  #       result
-  #     {:error, changeset} = error ->
-  #       IO.inspect(changeset, label: "Update failed with changeset")
-  #       error
-  #   end
-  # end
   def debug_update_user(%User{} = user, attrs) do
     IO.inspect(attrs, label: "Update User Attrs")
 

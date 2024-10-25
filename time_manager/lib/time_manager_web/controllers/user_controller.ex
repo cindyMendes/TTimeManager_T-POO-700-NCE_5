@@ -211,28 +211,46 @@ defmodule TimeManagerWeb.UserController do
     user_to_promote = Accounts.get_user!(id)
     current_user = Guardian.Plug.current_resource(conn)
 
-    if current_user && current_user.role == "general_manager" do
-      case Accounts.update_user_role(user_to_promote, "manager") do
-        {:ok, updated_user} ->
-          conn
-          |> put_status(:ok)
-          |> json(%{
-            data: %{
-              id: updated_user.id,
-              username: updated_user.username,
-              email: updated_user.email,
-              role: updated_user.role
-            }
-          })
-        {:error, changeset} ->
-          conn
-          |> put_status(:unprocessable_entity)
-          |> json(%{errors: %{detail: format_changeset_errors(changeset)}})
-      end
-    else
-      conn
-      |> put_status(:forbidden)
-      |> json(%{errors: %{detail: "Not authorized"}})
+    cond do
+      is_nil(current_user) ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{errors: %{detail: "Authentication required"}})
+        
+      current_user.role != "general_manager" ->
+        conn
+        |> put_status(:forbidden)
+        |> json(%{errors: %{detail: "Only general managers can promote users"}})
+        
+      user_to_promote.role == "general_manager" ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: %{detail: "Cannot promote a general manager"}})
+        
+      true ->
+        case Accounts.update_user_role(user_to_promote, "manager") do
+          {:ok, updated_user} ->
+            conn
+            |> put_status(:ok)
+            |> json(%{
+              data: %{
+                id: updated_user.id,
+                username: updated_user.username,
+                email: updated_user.email,
+                role: updated_user.role
+              }
+            })
+            
+          {:error, :invalid_role} ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(%{errors: %{detail: "Invalid role specified"}})
+            
+          {:error, changeset} ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(%{errors: %{detail: format_changeset_errors(changeset)}})
+        end
     end
   end
 
@@ -241,34 +259,52 @@ defmodule TimeManagerWeb.UserController do
     user_to_demote = Accounts.get_user!(id)
     current_user = Guardian.Plug.current_resource(conn)
 
-    if current_user && current_user.role == "general_manager" do
-      case Accounts.update_user_role(user_to_demote, "employee") do
-        {:ok, updated_user} ->
-          conn
-          |> put_status(:ok)
-          |> json(%{
-            data: %{
-              id: updated_user.id,
-              username: updated_user.username,
-              email: updated_user.email,
-              role: updated_user.role
-            }
-          })
-        {:error, changeset} ->
-          conn
-          |> put_status(:unprocessable_entity)
-          |> json(%{errors: %{detail: format_changeset_errors(changeset)}})
-      end
-    else
-      conn
-      |> put_status(:forbidden)
-      |> json(%{errors: %{detail: "Not authorized"}})
+    cond do
+      is_nil(current_user) ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{errors: %{detail: "Authentication required"}})
+        
+      current_user.role != "general_manager" ->
+        conn
+        |> put_status(:forbidden)
+        |> json(%{errors: %{detail: "Only general managers can demote users"}})
+        
+      user_to_demote.role == "general_manager" ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: %{detail: "Cannot demote a general manager"}})
+        
+      true ->
+        case Accounts.update_user_role(user_to_demote, "employee") do
+          {:ok, updated_user} ->
+            conn
+            |> put_status(:ok)
+            |> json(%{
+              data: %{
+                id: updated_user.id,
+                username: updated_user.username,
+                email: updated_user.email,
+                role: updated_user.role
+              }
+            })
+            
+          {:error, :invalid_role} ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(%{errors: %{detail: "Invalid role specified"}})
+            
+          {:error, changeset} ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(%{errors: %{detail: format_changeset_errors(changeset)}})
+        end
     end
   end
 
   # Helper function to get the current user role
   defp current_user_role(conn) do
-    # Assuming there's a function to retrieve the current authenticated user
+    # Function to retrieve the current authenticated user
     current_user = get_current_user(conn)
     current_user.role
   end
