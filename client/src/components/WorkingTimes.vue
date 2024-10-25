@@ -232,7 +232,7 @@ export default {
         };
 
 
-        await api.post(`/workingtime/${props.userId}`, data);
+        await api.post(`/workingtimes/${props.userId}`, data);
         await getWorkingTimes();
         cancelCreate();
       } catch (err) {
