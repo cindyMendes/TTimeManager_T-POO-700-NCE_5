@@ -4,7 +4,7 @@
       <h1 class="text-3xl font-bold text-bat-yellow">Tableau de Bord du Vigilant</h1>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" v-if="username">
       <!-- User Profile Card -->
       <div class="bg-bat-gray rounded-lg shadow-bat p-6 hover:bg-opacity-90 transition duration-300">
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
@@ -34,7 +34,7 @@
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
           <i class="fas fa-chart-bar mr-2"></i> Analyse de Patrouille
         </h2>
-        <ChartManager :userId="currentUserId" :username="username" />
+        <ChartManager :userId="currentUserId" :username="username" v-if="username" />
       </div>
 
       <!-- Daily Hours Chart Card -->
@@ -42,7 +42,7 @@
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
           <i class="fas fa-chart-line mr-2"></i> Heures Quotidiennes
         </h2>
-        <DailyHoursChart :userId="currentUserId" :username="username" />
+        <DailyHoursChart :userId="currentUserId" :username="username" v-if="username" />
       </div>
 
       <!-- Line Chart Card -->
@@ -50,11 +50,12 @@
         <h2 class="text-xl font-bold mb-4 text-bat-yellow flex items-center">
           <i class="fas fa-chart-line mr-2"></i> Activité de Patrouille
         </h2>
-        <LineChart :userId="currentUserId" :username="username" />
+        <LineChart :userId="currentUserId" :username="username" v-if="username" />
       </div>
     </div>
   </div>
 </template>
+
 
 <script>
 import User from '@/components/User.vue';
@@ -88,7 +89,7 @@ export default {
     async fetchCurrentUserInfo() {
       try {
         const response = await api.get(`/users/${this.currentUserId}`);
-        this.username = response.data.username;
+        this.username = response.data.data.username; // Utilisez data.data.username
       } catch (error) {
         console.error("Erreur lors de la récupération des informations de l'utilisateur :", error);
       }
